@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "tables/character_stats.h"
 #include "tables/description.h"
 #include "tables/dialog.h"
+#include "tables/inventory.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -32,8 +33,65 @@ void Database_init(struct Database *db)
     db->tables[DIALOG] = DialogTable_create();
     db->tables[ITEMS] = ItemTable_create();
     db->tables[DESCRIPTION] = DescriptionTable_create();
+    db->tables[INVENTORY] = InventoryTable_create();
     db->initialized = 1;
 
+}
+
+long table_offset(enum Table table)
+{
+    assert(table >= 0 && table < MAX_TABLES);
+
+    long offset = 0;
+    for (enum Table tbl = 0; tbl < table; tbl++) {
+        switch (tbl) {
+            case CHARACTER_STATS:
+                offset += sizeof(struct CharacterStatsTable);
+                break;
+            case DESCRIPTION:
+                offset += sizeof(struct DescriptionTable);
+                break;
+            case DIALOG:
+                offset += sizeof(struct DialogTable);
+                break;
+            case INVENTORY:
+                offset += sizeof(struct InventoryTable);
+                break;
+            case ITEMS:
+                offset += sizeof(struct ItemTable);
+                break;
+            default:
+                sentinel("Unknown table type");
+        }
+    }
+
+    return offset;
+
+error:
+    return -1;
+}
+
+size_t table_size(enum Table table)
+{
+    assert(table >= 0 && table < MAX_TABLES);
+
+    switch (table) {
+        case CHARACTER_STATS:
+            return sizeof(struct CharacterStatsTable);
+        case DESCRIPTION:
+            return sizeof(struct DescriptionTable);
+        case DIALOG:
+            return sizeof(struct DialogTable);
+        case INVENTORY:
+            return sizeof(struct InventoryTable);
+        case ITEMS:
+            return sizeof(struct ItemTable);
+        default:
+            sentinel("Unknown table type");
+    }
+
+error:
+    return 0;
 }
 
 void Database_open(struct Database *db, const char *path)
@@ -59,26 +117,8 @@ void Database_open(struct Database *db, const char *path)
     // so we can just read them in order by offsets
 
     for (enum Table tbl = 0; tbl < MAX_TABLES; tbl++) {
-        switch (tbl) {
-            case CHARACTER_STATS:
-                fseek(db->file, 0, SEEK_SET);
-                check(fread(db->tables[tbl], sizeof(struct CharacterStatsTable), 1, db->file), "Failed to read CharacterStatsTable");
-                break;
-            case DESCRIPTION:
-                fseek(db->file, sizeof(struct CharacterStatsTable), SEEK_SET);
-                check(fread(db->tables[tbl], sizeof(struct DescriptionTable), 1, db->file), "Failed to read DescriptionTable");
-                break;
-            case DIALOG:
-                fseek(db->file, sizeof(struct CharacterStatsTable) + sizeof(struct DescriptionTable), SEEK_SET);
-                check(fread(db->tables[tbl], sizeof(struct DialogTable), 1, db->file), "Failed to read DialogTable");
-                break;
-            case ITEMS:
-                fseek(db->file, sizeof(struct CharacterStatsTable) + sizeof(struct DescriptionTable) + sizeof(struct DialogTable), SEEK_SET);
-                check(fread(db->tables[tbl], sizeof(struct ItemTable), 1, db->file), "Failed to read ItemTable");
-                break;
-            default:
-                sentinel("Unknown table: %d", tbl);
-        }
+        fseek(db->file, table_offset(tbl), SEEK_SET);
+        check(fread(db->tables[tbl], table_size(tbl), 1, db->file), "Failed to read table %d", tbl);
     }
 
 error:

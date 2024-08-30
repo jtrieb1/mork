@@ -17,9 +17,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "db.h"
+#include "tables/character_stats.h"
+#include "tables/dialog.h"
 
 #include <assert.h>
+#include <stdio.h>
 #include <lcthw/dbg.h>
+
+void Database_init(struct Database *db)
+{
+    // Initialize all tables
+    db->tables[CHARACTER_STATS] = CharacterStatsTable_create();
+    db->tables[DIALOG] = DialogTable_create();
+    db->tables[ITEMS] = ItemTable_create();
+    db->initialized = 1;
+
+}
 
 void Database_open(struct Database *db, const char *path)
 {
@@ -29,6 +42,39 @@ void Database_open(struct Database *db, const char *path)
     db->file = fopen(path, "r+");
     check(db->file, "Failed to open file: %s", path);
 
+    Database_init(db);
+
+    // If the file is empty, don't bother reading anything
+    if (fseek(db->file, 0, SEEK_END) == 0) {
+        long size = ftell(db->file);
+        if (size == 0) {
+            return;
+        }
+    }
+
+    // Load the database from disk
+    // The database file is just each table written out in order
+    // so we can just read them in order by offsets
+
+    for (enum Table tbl = 0; tbl < MAX_TABLES; tbl++) {
+        switch (tbl) {
+            case CHARACTER_STATS:
+                fseek(db->file, 0, SEEK_SET);
+                check(fread(db->tables[tbl], sizeof(struct CharacterStatsTable), 1, db->file), "Failed to read CharacterStatsTable");
+                break;
+            case DIALOG:
+                fseek(db->file, sizeof(struct CharacterStatsTable), SEEK_SET);
+                check(fread(db->tables[tbl], sizeof(struct DialogTable), 1, db->file), "Failed to read DialogTable");
+                break;
+            case ITEMS:
+                fseek(db->file, sizeof(struct CharacterStatsTable) + sizeof(struct DialogTable), SEEK_SET);
+                check(fread(db->tables[tbl], sizeof(struct ItemTable), 1, db->file), "Failed to read ItemTable");
+                break;
+            default:
+                sentinel("Unknown table: %d", tbl);
+        }
+    }
+
 error:
     return;
 }
@@ -36,14 +82,13 @@ error:
 void Database_close(struct Database *db)
 {
     assert(db != NULL);
+    if (db->initialized != 1) {
+        Database_init(db);
+    }
 
     if (db->file) {
         // Make sure we write out to the file before closing it
-        for (enum Table tbl = 0; tbl < MAX_TABLES; tbl++) {
-            if (db->tables[tbl]) {
-                Database_write(db, tbl);
-            }
-        }
+        Database_flush(db);
         fclose(db->file);
     }
 }
@@ -86,15 +131,21 @@ void Database_destroy(struct Database *db)
 {
     assert(db != NULL);
 
+    // Make sure we close before we destroy
+    Database_close(db);
+
     for (enum Table tbl = 0; tbl < MAX_TABLES; tbl++) {
         switch (tbl) {
             case CHARACTER_STATS:
+                if (db->tables[tbl] ==  NULL) break;
                 CharacterStatsTable_destroy(db->tables[tbl]);
                 break;
             case DIALOG:
+                if (db->tables[tbl] == NULL) break;
                 DialogTable_destroy(db->tables[tbl]);
                 break;
             case ITEMS:
+                if (db->tables[tbl] == NULL) break;
                 ItemTable_destroy(db->tables[tbl]);
                 break;
             default:
@@ -163,12 +214,14 @@ struct CharacterStatsRecord *Database_get_character_stats(struct Database *db, i
 
 void Database_set_character_stats(struct Database *db, struct CharacterStatsRecord *stats)
 {
+    // This method takes ownership of the stats record, so it must be freed here
     assert(db != NULL);
 
     struct CharacterStatsTable *table = db->tables[CHARACTER_STATS];
     assert(table != NULL);
 
     CharacterStatsTable_set(table, stats);
+    CharacterStatsRecord_destroy(stats);
 }
 
 struct DialogRecord *Database_get_dialog(struct Database *db, int id)
@@ -183,12 +236,14 @@ struct DialogRecord *Database_get_dialog(struct Database *db, int id)
 
 void Database_set_dialog(struct Database *db, struct DialogRecord *dialog)
 {
+    // This method takes ownership of the dialog record, so it must be freed here
     assert(db != NULL);
 
     struct DialogTable *table = db->tables[DIALOG];
     assert(table != NULL);
 
     DialogTable_set(table, dialog);
+    DialogRecord_destroy(dialog);
 }
 
 struct ItemRecord *Database_get_item(struct Database *db, int id)
@@ -203,10 +258,12 @@ struct ItemRecord *Database_get_item(struct Database *db, int id)
 
 void Database_set_item(struct Database *db, struct ItemRecord *item)
 {
+    // This method takes ownership of the item record, so it must be freed here
     assert(db != NULL);
 
     struct ItemTable *table = db->tables[ITEMS];
     assert(table != NULL);
 
     ItemTable_set(table, item);
+    ItemRecord_destroy(item);
 }

@@ -16,18 +16,12 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define  _POSIX_C_SOURCE 200809L
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <dirent.h>
 
 #include <lcthw/dbg.h>
 #include <sys/stat.h>
-
-#include "src/config.h"
-
-struct MorkConfig *config = NULL;
 
 #include "src/coredb/db.h"
 
@@ -50,18 +44,15 @@ const char *intro_text = ""
 "jacob.triebwasser@gmail.com\n";
 
 const char *dir_name = "/tmp/morkdata";
+const char *dbname = "mork.db";
 
 struct Database *game_db = NULL;
 
 void setup()
 {
-    // Load config file
-    config = MorkConfig_default();
-    if (config == NULL) {
-        log_err("Could not load config file.");
-    }
-
-    MorkConfig_set_base_path(config, dir_name);
+    char *full_path = malloc(strlen(dir_name) + strlen(dbname) + 2);
+    check_mem(full_path);
+    sprintf(full_path, "%s/%s", dir_name, dbname);
 
     // Check if game directory exists
     struct stat st = {0};
@@ -72,26 +63,42 @@ void setup()
         int rc = mkdir(dir_name, 0700);
         check(rc == 0, "Could not create temporary directory");
 
-        debug("Creating blank database file %s", config->character_db_path);
-        FILE *db_file = fopen(config->character_db_path, "w");
+        debug("Creating blank database file %s", dbname);
+
+        FILE *db_file = fopen(full_path, "w");
         check(db_file != NULL, "Could not create database file");
         fclose(db_file);
     }
 
     // Spin up database
     game_db = Database_create();
-    Database_open(game_db, config->character_db_path);
+    Database_open(game_db, full_path);
     check(game_db, "Could not open Mork database");
 
     printf("%s\n", title);
     printf("%s\n", intro_text);
+
+    free(full_path);
+    return;
+
 error:
+    free(full_path);
     exit(1);
 }
 
 int main()
 {
     setup();
-    MorkConfig_free(config);
+    check(game_db != NULL, "Database not initialized");
+
+    // Note: Game database should be prepopulated with all assets for the game.
+    // Tools for this are not yet implemented, but every table has working write methods.
+    // Current goal is to turn everything in src into a Mork engine library for doing Zorklikes
+    // and the database is the heart of that.
+
+error:
+    if (game_db != NULL) {
+        Database_destroy(game_db);
+    }
     return 0;
 }

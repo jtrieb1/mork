@@ -33,6 +33,7 @@ enum Table {
 };
 
 struct Database {
+    unsigned char initialized;
     FILE *file;
     void *tables[MAX_TABLES];
 };

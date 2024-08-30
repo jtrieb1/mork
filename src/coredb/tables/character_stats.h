@@ -102,6 +102,8 @@ struct CharacterStatsRecord *CharacterStatsRecord_create(
     unsigned int wisdom,
     unsigned int funkiness
 );
+void CharacterStatsRecord_destroy(struct CharacterStatsRecord *rec);
+void CharacterStatsRecord_print(struct CharacterStatsRecord *rec);
 
 // We know that the maximum number of rows is 256,
 // so we can use unsigned chars to store row index data

@@ -62,7 +62,7 @@ struct CharacterStatsRecord *CharacterStatsRecord_create(
     CharacterStatsRecord_init(record);
     record->id = id;
     record->set = set;
-    strncpy(record->name, name, MAX_NAME_LEN);
+    strncpy(record->name, name, MAX_NAME_LEN - 1);
     record->level = level;
     record->experience = experience;
     record->health_and_mana = SET_HEALTH_AND_MANA(health, mana);
@@ -78,6 +78,29 @@ struct CharacterStatsRecord *CharacterStatsRecord_create(
 
 error:
     return NULL;
+}
+
+void CharacterStatsRecord_destroy(struct CharacterStatsRecord *record) {
+    free(record);
+}
+
+void CharacterStatsRecord_print(struct CharacterStatsRecord *record) {
+    printf("Character Stats Record\n");
+    printf("ID: %d\n", record->id);
+    printf("Set: %d\n", record->set);
+    printf("Name: %s\n", record->name);
+    printf("Level: %d\n", record->level);
+    printf("Experience: %lu\n", record->experience);
+    printf("Health: %lu\n", GET_HEALTH(record->health_and_mana));
+    printf("Max Health: %lu\n", GET_HEALTH(record->max_health_and_mana));
+    printf("Mana: %lu\n", GET_MANA(record->health_and_mana));
+    printf("Max Mana: %lu\n", GET_MANA(record->max_health_and_mana));
+    printf("Strength: %llu\n", GET_STAT(record->stats, STRENGTH));
+    printf("Dexterity: %llu\n", GET_STAT(record->stats, DEXTERITY));
+    printf("Intelligence: %llu\n", GET_STAT(record->stats, INTELLIGENCE));
+    printf("Charisma: %llu\n", GET_STAT(record->stats, CHARISMA));
+    printf("Wisdom: %llu\n", GET_STAT(record->stats, WISDOM));
+    printf("Funkiness: %llu\n", GET_STAT(record->stats, FUNKINESS));
 }
 
 struct CharacterStatsTable *CharacterStatsTable_create() {

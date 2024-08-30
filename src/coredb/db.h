@@ -24,10 +24,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "tables/items.h"
 #include <stdio.h>
 
-#define MAX_TABLES 3
+#define MAX_TABLES 4
 
 enum Table {
     CHARACTER_STATS = 0,
+    DESCRIPTION,
     DIALOG,
     ITEMS
 };
@@ -55,6 +56,9 @@ void Database_print(struct Database *db, enum Table table);
 // Record-level ops
 struct CharacterStatsRecord *Database_get_character_stats(struct Database *db, int id);
 void Database_set_character_stats(struct Database *db, struct CharacterStatsRecord *stats);
+
+struct DescriptionRecord *Database_get_description(struct Database *db, int id);
+void Database_set_description(struct Database *db, struct DescriptionRecord *description);
 
 struct DialogRecord *Database_get_dialog(struct Database *db, int id);
 void Database_set_dialog(struct Database *db, struct DialogRecord *dialog);

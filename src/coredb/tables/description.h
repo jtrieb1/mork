@@ -21,26 +21,26 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define MAX_DESCRIPTION 512
 #define MAX_ROWS_DESC 65535
 
-struct DescriptionEntry {
+struct DescriptionRecord {
     unsigned short id;
     unsigned char set;
     char description[MAX_DESCRIPTION];
     int next_id;
 };
 
-struct DescriptionEntry *DescriptionEntry_create(unsigned short id, char *description, int next_id);
-void DescriptionEntry_destroy(struct DescriptionEntry *entry);
+struct DescriptionRecord *DescriptionRecord_create(unsigned short id, char *description, int next_id);
+void DescriptionRecord_destroy(struct DescriptionRecord *entry);
 
 struct DescriptionTable {
     unsigned short nextEmptyRow;
     unsigned short maxOccupiedRow;
-    struct DescriptionEntry rows[MAX_ROWS_DESC];
+    struct DescriptionRecord rows[MAX_ROWS_DESC];
 };
 
 struct DescriptionTable *DescriptionTable_create();
 void DescriptionTable_init(struct DescriptionTable *table);
-void DescriptionTable_set(struct DescriptionTable *table, struct DescriptionEntry *entry);
-struct DescriptionEntry *DescriptionTable_get(struct DescriptionTable *table, unsigned short id);
-struct DescriptionEntry *DescriptionTable_get_next(struct DescriptionTable *table, unsigned short id); // For easy continuation of text
+void DescriptionTable_set(struct DescriptionTable *table, struct DescriptionRecord *entry);
+struct DescriptionRecord *DescriptionTable_get(struct DescriptionTable *table, unsigned short id);
+struct DescriptionRecord *DescriptionTable_get_next(struct DescriptionTable *table, unsigned short id); // For easy continuation of text
 void DescriptionTable_delete(struct DescriptionTable *table, unsigned short id);
 void DescriptionTable_destroy(struct DescriptionTable *table);

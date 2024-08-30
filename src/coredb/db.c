@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "db.h"
 #include "tables/character_stats.h"
+#include "tables/description.h"
 #include "tables/dialog.h"
 
 #include <assert.h>
@@ -30,6 +31,7 @@ void Database_init(struct Database *db)
     db->tables[CHARACTER_STATS] = CharacterStatsTable_create();
     db->tables[DIALOG] = DialogTable_create();
     db->tables[ITEMS] = ItemTable_create();
+    db->tables[DESCRIPTION] = DescriptionTable_create();
     db->initialized = 1;
 
 }
@@ -62,12 +64,16 @@ void Database_open(struct Database *db, const char *path)
                 fseek(db->file, 0, SEEK_SET);
                 check(fread(db->tables[tbl], sizeof(struct CharacterStatsTable), 1, db->file), "Failed to read CharacterStatsTable");
                 break;
-            case DIALOG:
+            case DESCRIPTION:
                 fseek(db->file, sizeof(struct CharacterStatsTable), SEEK_SET);
+                check(fread(db->tables[tbl], sizeof(struct DescriptionTable), 1, db->file), "Failed to read DescriptionTable");
+                break;
+            case DIALOG:
+                fseek(db->file, sizeof(struct CharacterStatsTable) + sizeof(struct DescriptionTable), SEEK_SET);
                 check(fread(db->tables[tbl], sizeof(struct DialogTable), 1, db->file), "Failed to read DialogTable");
                 break;
             case ITEMS:
-                fseek(db->file, sizeof(struct CharacterStatsTable) + sizeof(struct DialogTable), SEEK_SET);
+                fseek(db->file, sizeof(struct CharacterStatsTable) + sizeof(struct DescriptionTable) + sizeof(struct DialogTable), SEEK_SET);
                 check(fread(db->tables[tbl], sizeof(struct ItemTable), 1, db->file), "Failed to read ItemTable");
                 break;
             default:
@@ -90,6 +96,7 @@ void Database_close(struct Database *db)
         // Make sure we write out to the file before closing it
         Database_flush(db);
         fclose(db->file);
+        db->file = NULL;
     }
 }
 
@@ -139,6 +146,10 @@ void Database_destroy(struct Database *db)
             case CHARACTER_STATS:
                 if (db->tables[tbl] ==  NULL) break;
                 CharacterStatsTable_destroy(db->tables[tbl]);
+                break;
+            case DESCRIPTION:
+                if (db->tables[tbl] == NULL) break;
+                DescriptionTable_destroy(db->tables[tbl]);
                 break;
             case DIALOG:
                 if (db->tables[tbl] == NULL) break;
@@ -266,4 +277,26 @@ void Database_set_item(struct Database *db, struct ItemRecord *item)
 
     ItemTable_set(table, item);
     ItemRecord_destroy(item);
+}
+
+struct DescriptionRecord *Database_get_description(struct Database *db, int id)
+{
+    assert(db != NULL);
+
+    struct DescriptionTable *table = db->tables[DESCRIPTION];
+    assert(table != NULL);
+
+    return DescriptionTable_get(table, id);
+}
+
+void Database_set_description(struct Database *db, struct DescriptionRecord *desc)
+{
+    // This method takes ownership of the description record, so it must be freed here
+    assert(db != NULL);
+
+    struct DescriptionTable *table = db->tables[DESCRIPTION];
+    assert(table != NULL);
+
+    DescriptionTable_set(table, desc);
+    DescriptionRecord_destroy(desc);
 }

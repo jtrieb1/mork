@@ -22,9 +22,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <lcthw/dbg.h>
 #include <stdlib.h>
 
-struct DescriptionEntry *DescriptionEntry_create(unsigned short id, char *description, int next_id)
+struct DescriptionRecord *DescriptionRecord_create(unsigned short id, char *description, int next_id)
 {
-    struct DescriptionEntry *entry = malloc(sizeof(struct DescriptionEntry));
+    struct DescriptionRecord *entry = malloc(sizeof(struct DescriptionRecord));
     check_mem(entry);
 
     entry->id = id;
@@ -38,7 +38,7 @@ error:
     return NULL;
 }
 
-void DescriptionEntry_destroy(struct DescriptionEntry *entry)
+void DescriptionRecord_destroy(struct DescriptionRecord *entry)
 {
     free(entry);
 }
@@ -69,13 +69,13 @@ void DescriptionTable_destroy(struct DescriptionTable *table)
 {
     for (int i = 0; i < MAX_ROWS_DESC; i++) {
         if (table->rows[i].set == 1) {
-            DescriptionEntry_destroy(&table->rows[i]);
+            DescriptionRecord_destroy(&table->rows[i]);
         }
     }
     free(table);
 }
 
-void DescriptionTable_set(struct DescriptionTable *table, struct DescriptionEntry *entry)
+void DescriptionTable_set(struct DescriptionTable *table, struct DescriptionRecord *entry)
 {
     // Check for existing row with matching id
     for (int i = 0; i < table->maxOccupiedRow; i++) {
@@ -110,7 +110,7 @@ void DescriptionTable_set(struct DescriptionTable *table, struct DescriptionEntr
     }
 }
 
-struct DescriptionEntry *DescriptionTable_get(struct DescriptionTable *table, unsigned short id)
+struct DescriptionRecord *DescriptionTable_get(struct DescriptionTable *table, unsigned short id)
 {
     for (int i = 0; i < table->maxOccupiedRow; i++) {
         if (table->rows[i].id == id) {
@@ -121,7 +121,7 @@ struct DescriptionEntry *DescriptionTable_get(struct DescriptionTable *table, un
     return NULL;
 }
 
-struct DescriptionEntry *DescriptionTable_get_next(struct DescriptionTable *table, unsigned short id)
+struct DescriptionRecord *DescriptionTable_get_next(struct DescriptionTable *table, unsigned short id)
 {
     for (int i = 0; i < table->maxOccupiedRow; i++) {
         if (table->rows[i].id == id) {

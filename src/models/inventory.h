@@ -38,5 +38,5 @@ struct Item *Inventory_getItem(struct Inventory *inventory, int index);
 struct Item *Inventory_getItemByName(struct Inventory *inventory, const char *name);
 void Inventory_print(struct Inventory *inventory);
 
-int Inventory_save(struct Database *db, char *owner_name, struct Inventory *inventory);
-struct Inventory *Inventory_load(struct Database *db, int id);
+int Inventory_save(struct Database *db, int owner_id, struct Inventory *inventory);
+struct Inventory *Inventory_load(struct Database *db, int owner_id);

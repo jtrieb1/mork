@@ -45,72 +45,25 @@ void Item_destroy(struct Item *item)
 
 int Item_save(struct Database *db, struct Item *item)
 {
-    struct ItemRecord *record = Database_get_item_by_name(db, item->name);
-    if (record == NULL) {
-        // Create record
-        record = malloc(sizeof(struct ItemRecord));
-        check_mem(record);
+    struct ItemRecord *record = Database_getOrCreateItem(db, item->name);
+    struct DescriptionRecord *description = Database_getOrCreateDescription(db, item->description);
 
-        strncpy(record->name, item->name, MAX_NAME);
-        record->name[MAX_NAME - 1] = '\0';
+    record->description_id = description->id;
 
-        record->set = 1;
-
-        // This is new, so so is its description
-        struct DescriptionRecord *description = malloc(sizeof(struct DescriptionRecord));
-        check_mem(description);
-
-        strncpy(description->description, item->description, MAX_DESCRIPTION);
-        description->description[MAX_DESCRIPTION - 1] = '\0';
-
-        description->set = 1;
-        int description_id = Database_set_description(db, description);
-        check(description_id != -1, "Failed to set description");
-
-        record->description_id = description_id;
-
-        return Database_set_item(db, record);
-    }
-
-    strncpy(record->name, item->name, MAX_NAME);
-    record->name[MAX_NAME - 1] = '\0';
-
-    struct DescriptionRecord *description = Database_get_description_by_prefix(db, item->description);
-    if (description == NULL) {
-        // Create description
-        description = malloc(sizeof(struct DescriptionRecord));
-        check_mem(description);
-
-        strncpy(description->description, item->description, MAX_DESCRIPTION);
-        description->description[MAX_DESCRIPTION - 1] = '\0';
-
-        description->set = 1;
-
-        int description_id = Database_set_description(db, description);
-        check(description_id != -1, "Failed to set description");
-
-        record->description_id = description_id;
-    } else {
-        record->description_id = description->id;
-    }
-    return Database_set_item(db, record);
-
-error:
-    return -1;
+    return Database_updateItem(db, record, record->id);
 }
 
 struct Item* Item_load(struct Database* db, int id)
 {
-    struct ItemRecord *record = Database_get_item(db, id);
-    if (record == NULL) {
-        return NULL;
-    }
+    struct ItemRecord *record = Database_getItem(db, id);
+    check(record != NULL, "Failed to load item.");
 
-    struct DescriptionRecord *description = Database_get_description(db, record->description_id);
-    if (description == NULL) {
-        return NULL;
-    }
+    struct DescriptionRecord *description = Database_getDescription(db, record->description_id);
+    check(description != NULL, "Failed to load description.");
 
     struct Item *item = Item_create(record->name, description->description);
     return item;
+
+error:
+    return NULL;
 }

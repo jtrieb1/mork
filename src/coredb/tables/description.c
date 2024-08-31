@@ -44,8 +44,6 @@ void DescriptionRecord_destroy(struct DescriptionRecord *entry)
 }
 
 void DescriptionTable_init(struct DescriptionTable *table) {
-    table->nextEmptyRow = 0;
-    table->maxOccupiedRow = 0;
     for (int i = 0; i < MAX_ROWS_DESC; i++) {
         table->rows[i].id = 0;
         table->rows[i].next_id = 0;
@@ -75,56 +73,52 @@ void DescriptionTable_destroy(struct DescriptionTable *table)
     free(table);
 }
 
-unsigned short DescriptionTable_set(struct DescriptionTable *table, struct DescriptionRecord *entry)
+static unsigned short findNextRowToFill(struct DescriptionTable *table)
 {
-    // Check for existing row with matching id
-    for (unsigned short i = 0; i < table->maxOccupiedRow; i++) {
-        if (table->rows[i].id == entry->id) {
-            table->rows[i] = *entry;
-            return i;
+    unsigned short idx = 0;
+    for (int i = 0; i < MAX_ROWS_DESC; i++) {
+        if (table->rows[i].id == 0) {
+            idx = i;
+            break;
         }
     }
-
-    // If no existing row with matching id, add new row
-    if (table->maxOccupiedRow < MAX_ROWS_DESC - 1) {
-        // Table is not full here
-        // Find where the row needs to go
-        // Is nextEmptyRow empty?
-        if (table->rows[table->nextEmptyRow].set == 0) {
-            table->rows[table->nextEmptyRow] = *entry;
-            table->maxOccupiedRow = table->nextEmptyRow;
-            table->nextEmptyRow++;
-            return table->maxOccupiedRow;
-        } else {
-            // Find the next empty row
-            for (unsigned short i = 0; i < MAX_ROWS_DESC - 1; i++) {
-                if (table->rows[i].set == 0) {
-                    table->rows[i] = *entry;
-                    table->maxOccupiedRow = i;
-                    table->nextEmptyRow = i + 1;
-                    return table->maxOccupiedRow;
-                }
+    if (idx == 0) {
+        // No empty rows, so find oldest and overwrite
+        int min_id = 65535;
+        for (int i = 0; i < MAX_ROWS_DESC; i++) {
+            if (table->rows[i].id < min_id) {
+                min_id = table->rows[i].id;
+                idx = i;
             }
-            // No empty row found, this is highly unlikely but not a complete failure
+        }
+    }
+    return idx;
+}
+
+unsigned short DescriptionTable_insert(struct DescriptionTable *table, struct DescriptionRecord *record)
+{
+    unsigned short idx = findNextRowToFill(table);
+    table->rows[idx] = *record;
+    table->rows[idx].set = 1;
+    return table->rows[idx].id;
+}
+
+unsigned short DescriptionTable_update(struct DescriptionTable *table, struct DescriptionRecord *record, unsigned short id)
+{
+    for (int i = 0; i < MAX_ROWS_DESC; i++) {
+        if (table->rows[i].id == id) {
+            table->rows[i] = *record;
+            table->rows[i].set = 1;
+            return table->rows[i].id;
         }
     }
 
-    // Table is full
-    unsigned short oldestRow = 0;
-    // The oldest row is the row with the lowest id
-    for (unsigned short i = 0; i < MAX_ROWS_DESC - 1; i++) {
-        if (table->rows[i].id < table->rows[oldestRow].id) {
-            oldestRow = i;
-        }
-    }
-    table->rows[oldestRow] = *entry;
-    return oldestRow;
-
+    return 0;
 }
 
 struct DescriptionRecord *DescriptionTable_get(struct DescriptionTable *table, unsigned short id)
 {
-    for (int i = 0; i < table->maxOccupiedRow; i++) {
+    for (int i = 0; i < MAX_ROWS_DESC; i++) {
         if (table->rows[i].id == id) {
             return &table->rows[i];
         }
@@ -135,7 +129,7 @@ struct DescriptionRecord *DescriptionTable_get(struct DescriptionTable *table, u
 
 struct DescriptionRecord *DescriptionTable_get_next(struct DescriptionTable *table, unsigned short id)
 {
-    for (int i = 0; i < table->maxOccupiedRow; i++) {
+    for (int i = 0; i < MAX_ROWS_DESC; i++) {
         if (table->rows[i].id == id) {
             return &table->rows[table->rows[i].next_id];
         }
@@ -146,7 +140,7 @@ struct DescriptionRecord *DescriptionTable_get_next(struct DescriptionTable *tab
 
 struct DescriptionRecord *DescriptionTable_get_by_prefix(struct DescriptionTable *table, char *prefix)
 {
-    for (int i = 0; i < table->maxOccupiedRow; i++) {
+    for (int i = 0; i < MAX_ROWS_DESC; i++) {
         if (strncmp(table->rows[i].description, prefix, strlen(prefix)) == 0) {
             return &table->rows[i];
         }
@@ -157,7 +151,7 @@ struct DescriptionRecord *DescriptionTable_get_by_prefix(struct DescriptionTable
 
 void DescriptionTable_delete(struct DescriptionTable *table, unsigned short id)
 {
-    for (int i = 0; i < table->maxOccupiedRow; i++) {
+    for (int i = 0; i < MAX_ROWS_DESC; i++) {
         if (table->rows[i].id == id) {
             table->rows[i].set = 0;
             return;

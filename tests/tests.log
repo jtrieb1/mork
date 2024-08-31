@@ -1,0 +1,924 @@
+==145716== Memcheck, a memory error detector
+==145716== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==145716== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
+==145716== Command: ./tests/db_tests
+==145716== 
+DEBUG tests/db_tests.c:88: ----- RUNNING: ./tests/db_tests
+DEBUG tests/db_tests.c:77: 
+----- test_create_db_file
+DEBUG tests/db_tests.c:78: 
+----- test_create
+DEBUG tests/db_tests.c:79: 
+----- test_open
+DEBUG tests/db_tests.c:80: 
+----- test_flush
+==145716== Syscall param write(buf) points to uninitialised byte(s)
+==145716==    at 0x498A574: write (write.c:26)
+==145716==    by 0x4901964: _IO_file_write@@GLIBC_2.2.5 (fileops.c:1181)
+==145716==    by 0x4901BC9: new_do_write (fileops.c:449)
+==145716==    by 0x4901BC9: _IO_new_file_xsputn (fileops.c:1255)
+==145716==    by 0x4901BC9: _IO_file_xsputn@@GLIBC_2.2.5 (fileops.c:1197)
+==145716==    by 0x48F4A01: fwrite (iofwrite.c:39)
+==145716==    by 0x10D6D1: Database_flush (db.c:151)
+==145716==    by 0x10FC13: test_flush (db_tests.c:47)
+==145716==    by 0x10FEC1: all_tests (db_tests.c:80)
+==145716==    by 0x10FEC1: all_tests (db_tests.c:73)
+==145716==    by 0x10B34E: main (db_tests.c:88)
+==145716==  Address 0x4a83953 is 3 bytes inside a block of size 69,632 alloc'd
+==145716==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145716==    by 0x10B873: CharacterStatsTable_create (character_stats.c:115)
+==145716==    by 0x10CFAE: Database_init (db.c:33)
+==145716==    by 0x10D197: Database_open (db.c:106)
+==145716==    by 0x10FB8A: test_open (db_tests.c:39)
+==145716==    by 0x10FE8A: all_tests (stdio2.h:79)
+==145716==    by 0x10FE8A: all_tests (db_tests.c:73)
+==145716==    by 0x10B34E: main (db_tests.c:88)
+==145716== 
+==145716== Syscall param write(buf) points to uninitialised byte(s)
+==145716==    at 0x498A574: write (write.c:26)
+==145716==    by 0x4901964: _IO_file_write@@GLIBC_2.2.5 (fileops.c:1181)
+==145716==    by 0x4900560: new_do_write (fileops.c:449)
+==145716==    by 0x4900560: _IO_do_write@@GLIBC_2.2.5 (fileops.c:426)
+==145716==    by 0x4902F80: _IO_switch_to_get_mode (genops.c:166)
+==145716==    by 0x4901237: _IO_file_seekoff@@GLIBC_2.2.5 (fileops.c:927)
+==145716==    by 0x48FCE9D: fseek (fseek.c:36)
+==145716==    by 0x10D5BA: Database_write (db.c:249)
+==145716==    by 0x10D6D1: Database_flush (db.c:151)
+==145716==    by 0x10FC13: test_flush (db_tests.c:47)
+==145716==    by 0x10FEC1: all_tests (db_tests.c:80)
+==145716==    by 0x10FEC1: all_tests (db_tests.c:73)
+==145716==    by 0x10B34E: main (db_tests.c:88)
+==145716==  Address 0x4a94990 is 0 bytes inside a block of size 4,096 alloc'd
+==145716==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145716==    by 0x48F31A4: _IO_file_doallocate (filedoalloc.c:101)
+==145716==    by 0x4903513: _IO_doallocbuf (genops.c:347)
+==145716==    by 0x490146B: _IO_file_seekoff@@GLIBC_2.2.5 (fileops.c:938)
+==145716==    by 0x48FCE9D: fseek (fseek.c:36)
+==145716==    by 0x10D1A7: Database_open (db.c:109)
+==145716==    by 0x10FB8A: test_open (db_tests.c:39)
+==145716==    by 0x10FE8A: all_tests (stdio2.h:79)
+==145716==    by 0x10FE8A: all_tests (db_tests.c:73)
+==145716==    by 0x10B34E: main (db_tests.c:88)
+==145716== 
+==145716== Syscall param write(buf) points to uninitialised byte(s)
+==145716==    at 0x498A574: write (write.c:26)
+==145716==    by 0x4901964: _IO_file_write@@GLIBC_2.2.5 (fileops.c:1181)
+==145716==    by 0x4900560: new_do_write (fileops.c:449)
+==145716==    by 0x4900560: _IO_do_write@@GLIBC_2.2.5 (fileops.c:426)
+==145716==    by 0x49010AF: _IO_file_sync@@GLIBC_2.2.5 (fileops.c:799)
+==145716==    by 0x48F3826: fflush (iofflush.c:40)
+==145716==    by 0x10FC13: test_flush (db_tests.c:47)
+==145716==    by 0x10FEC1: all_tests (db_tests.c:80)
+==145716==    by 0x10FEC1: all_tests (db_tests.c:73)
+==145716==    by 0x10B34E: main (db_tests.c:88)
+==145716==  Address 0x4a94990 is 0 bytes inside a block of size 4,096 alloc'd
+==145716==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145716==    by 0x48F31A4: _IO_file_doallocate (filedoalloc.c:101)
+==145716==    by 0x4903513: _IO_doallocbuf (genops.c:347)
+==145716==    by 0x490146B: _IO_file_seekoff@@GLIBC_2.2.5 (fileops.c:938)
+==145716==    by 0x48FCE9D: fseek (fseek.c:36)
+==145716==    by 0x10D1A7: Database_open (db.c:109)
+==145716==    by 0x10FB8A: test_open (db_tests.c:39)
+==145716==    by 0x10FE8A: all_tests (stdio2.h:79)
+==145716==    by 0x10FE8A: all_tests (db_tests.c:73)
+==145716==    by 0x10B34E: main (db_tests.c:88)
+==145716== 
+DEBUG tests/db_tests.c:81: 
+----- test_close
+DEBUG tests/db_tests.c:82: 
+----- test_destroy
+DEBUG tests/db_tests.c:83: 
+----- test_delete_db_file
+==145716== 
+==145716== HEAP SUMMARY:
+==145716==     in use at exit: 0 bytes in 0 blocks
+==145716==   total heap usage: 10 allocs, 10 frees, 109,912,448 bytes allocated
+==145716== 
+==145716== All heap blocks were freed -- no leaks are possible
+==145716== 
+==145716== Use --track-origins=yes to see where uninitialised values come from
+==145716== For lists of detected and suppressed errors, rerun with: -s
+==145716== ERROR SUMMARY: 14 errors from 3 contexts (suppressed: 0 from 0)
+==145730== Memcheck, a memory error detector
+==145730== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==145730== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
+==145730== Command: ./tests/model_tests
+==145730== 
+DEBUG tests/model_tests.c:200: ----- RUNNING: ./tests/model_tests
+DEBUG tests/model_tests.c:186: 
+----- test_create_db_file
+DEBUG tests/model_tests.c:187: 
+----- test_create_db
+DEBUG tests/model_tests.c:188: 
+----- test_create_character
+==145730== Conditional jump or move depends on uninitialised value(s)
+==145730==    at 0x485036C: strcmp (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145730==    by 0x10BA5B: CharacterStatsTable_getByName (character_stats.c:160)
+==145730==    by 0x10ED94: Character_save (character.c:69)
+==145730==    by 0x11007F: test_create_character (model_tests.c:66)
+==145730==    by 0x110EBA: all_tests (model_tests.c:188)
+==145730==    by 0x110EBA: all_tests (model_tests.c:182)
+==145730==    by 0x10B34E: main (model_tests.c:200)
+==145730== 
+==145730== Conditional jump or move depends on uninitialised value(s)
+==145730==    at 0x4850394: strcmp (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145730==    by 0x10BA5B: CharacterStatsTable_getByName (character_stats.c:160)
+==145730==    by 0x10ED94: Character_save (character.c:69)
+==145730==    by 0x11007F: test_create_character (model_tests.c:66)
+==145730==    by 0x110EBA: all_tests (model_tests.c:188)
+==145730==    by 0x110EBA: all_tests (model_tests.c:182)
+==145730==    by 0x10B34E: main (model_tests.c:200)
+==145730== 
+[ERROR] (src/coredb/tables/character_stats.c:164: errno: None) CharacterStatsTable_getByName: Name not found (Mork)
+DEBUG tests/model_tests.c:189: 
+----- test_create_item
+==145730== Conditional jump or move depends on uninitialised value(s)
+==145730==    at 0x484FACC: strncmp (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145730==    by 0x10CEA1: ItemTable_getByName (items.c:133)
+==145730==    by 0x10E0A2: Database_getOrCreateItem (db.c:380)
+==145730==    by 0x10F882: Item_save (item.c:48)
+==145730==    by 0x11073E: test_create_item (model_tests.c:101)
+==145730==    by 0x110EF1: all_tests (model_tests.c:189)
+==145730==    by 0x110EF1: all_tests (model_tests.c:182)
+==145730==    by 0x10B34E: main (model_tests.c:200)
+==145730== 
+==145730== Conditional jump or move depends on uninitialised value(s)
+==145730==    at 0x484FACC: strncmp (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145730==    by 0x10BFB7: DescriptionTable_get_by_prefix (description.c:144)
+==145730==    by 0x10E3AD: Database_getOrCreateDescription (db.c:452)
+==145730==    by 0x10F891: Item_save (item.c:49)
+==145730==    by 0x11073E: test_create_item (model_tests.c:101)
+==145730==    by 0x110EF1: all_tests (model_tests.c:189)
+==145730==    by 0x110EF1: all_tests (model_tests.c:182)
+==145730==    by 0x10B34E: main (model_tests.c:200)
+==145730== 
+DEBUG tests/model_tests.c:190: 
+----- test_add_item_to_inventory
+DEBUG tests/model_tests.c:191: 
+----- test_remove_item_from_inventory
+==145730== Invalid read of size 1
+==145730==    at 0x484FAC5: strncmp (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145730==    by 0x10F2E0: Inventory_removeItem (inventory.c:70)
+==145730==    by 0x110C7A: test_remove_item_from_inventory (model_tests.c:149)
+==145730==    by 0x110F63: all_tests (model_tests.c:191)
+==145730==    by 0x110F63: all_tests (model_tests.c:182)
+==145730==    by 0x10B34E: main (model_tests.c:200)
+==145730==  Address 0x4a976a0 is 0 bytes inside a block of size 636 free'd
+==145730==    at 0x484988F: free (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145730==    by 0x10F284: Inventory_destroy (inventory.c:45)
+==145730==    by 0x10ED68: Character_destroy (character.c:61)
+==145730==    by 0x1109F3: test_destroy_and_reload_character (model_tests.c:119)
+==145730==    by 0x110B19: test_add_item_to_inventory (model_tests.c:135)
+==145730==    by 0x110F28: all_tests (model_tests.c:190)
+==145730==    by 0x110F28: all_tests (model_tests.c:182)
+==145730==    by 0x10B34E: main (model_tests.c:200)
+==145730==  Block was alloc'd at
+==145730==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145730==    by 0x10F7C7: Item_create (item.c:26)
+==145730==    by 0x1106B0: test_create_item (model_tests.c:95)
+==145730==    by 0x110EF1: all_tests (model_tests.c:189)
+==145730==    by 0x110EF1: all_tests (model_tests.c:182)
+==145730==    by 0x10B34E: main (model_tests.c:200)
+==145730== 
+DEBUG tests/model_tests.c:192: 
+----- test_destroy_item
+==145730== Invalid free() / delete / delete[] / realloc()
+==145730==    at 0x484988F: free (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145730==    by 0x110FA3: test_destroy_item (model_tests.c:157)
+==145730==    by 0x110FA3: all_tests (model_tests.c:192)
+==145730==    by 0x110FA3: all_tests (model_tests.c:182)
+==145730==    by 0x10B34E: main (model_tests.c:200)
+==145730==  Address 0x4a976a0 is 0 bytes inside a block of size 636 free'd
+==145730==    at 0x484988F: free (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145730==    by 0x10F284: Inventory_destroy (inventory.c:45)
+==145730==    by 0x10ED68: Character_destroy (character.c:61)
+==145730==    by 0x1109F3: test_destroy_and_reload_character (model_tests.c:119)
+==145730==    by 0x110B19: test_add_item_to_inventory (model_tests.c:135)
+==145730==    by 0x110F28: all_tests (model_tests.c:190)
+==145730==    by 0x110F28: all_tests (model_tests.c:182)
+==145730==    by 0x10B34E: main (model_tests.c:200)
+==145730==  Block was alloc'd at
+==145730==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145730==    by 0x10F7C7: Item_create (item.c:26)
+==145730==    by 0x1106B0: test_create_item (model_tests.c:95)
+==145730==    by 0x110EF1: all_tests (model_tests.c:189)
+==145730==    by 0x110EF1: all_tests (model_tests.c:182)
+==145730==    by 0x10B34E: main (model_tests.c:200)
+==145730== 
+DEBUG tests/model_tests.c:193: 
+----- test_destroy_character
+DEBUG tests/model_tests.c:194: 
+----- test_destroy_db
+==145730== Syscall param write(buf) points to uninitialised byte(s)
+==145730==    at 0x498A574: write (write.c:26)
+==145730==    by 0x4901964: _IO_file_write@@GLIBC_2.2.5 (fileops.c:1181)
+==145730==    by 0x4901BC9: new_do_write (fileops.c:449)
+==145730==    by 0x4901BC9: _IO_new_file_xsputn (fileops.c:1255)
+==145730==    by 0x4901BC9: _IO_file_xsputn@@GLIBC_2.2.5 (fileops.c:1197)
+==145730==    by 0x48F4A01: fwrite (iofwrite.c:39)
+==145730==    by 0x10D6D1: Database_flush (db.c:151)
+==145730==    by 0x10D720: Database_close (db.c:138)
+==145730==    by 0x10D720: Database_close (db.c:129)
+==145730==    by 0x111015: test_destroy_db (model_tests.c:169)
+==145730==    by 0x111015: all_tests (model_tests.c:194)
+==145730==    by 0x111015: all_tests (model_tests.c:182)
+==145730==    by 0x10B34E: main (model_tests.c:200)
+==145730==  Address 0x4a83954 is 4 bytes inside a block of size 69,632 alloc'd
+==145730==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145730==    by 0x10B873: CharacterStatsTable_create (character_stats.c:115)
+==145730==    by 0x10CFAE: Database_init (db.c:33)
+==145730==    by 0x10D197: Database_open (db.c:106)
+==145730==    by 0x10FADE: test_create_db (model_tests.c:32)
+==145730==    by 0x110E75: all_tests (model_tests.c:187)
+==145730==    by 0x110E75: all_tests (model_tests.c:182)
+==145730==    by 0x10B34E: main (model_tests.c:200)
+==145730== 
+==145730== Syscall param write(buf) points to uninitialised byte(s)
+==145730==    at 0x498A574: write (write.c:26)
+==145730==    by 0x4901964: _IO_file_write@@GLIBC_2.2.5 (fileops.c:1181)
+==145730==    by 0x4900560: new_do_write (fileops.c:449)
+==145730==    by 0x4900560: _IO_do_write@@GLIBC_2.2.5 (fileops.c:426)
+==145730==    by 0x4902F80: _IO_switch_to_get_mode (genops.c:166)
+==145730==    by 0x4901237: _IO_file_seekoff@@GLIBC_2.2.5 (fileops.c:927)
+==145730==    by 0x48FCE9D: fseek (fseek.c:36)
+==145730==    by 0x10D5BA: Database_write (db.c:249)
+==145730==    by 0x10D6D1: Database_flush (db.c:151)
+==145730==    by 0x10D720: Database_close (db.c:138)
+==145730==    by 0x10D720: Database_close (db.c:129)
+==145730==    by 0x111015: test_destroy_db (model_tests.c:169)
+==145730==    by 0x111015: all_tests (model_tests.c:194)
+==145730==    by 0x111015: all_tests (model_tests.c:182)
+==145730==    by 0x10B34E: main (model_tests.c:200)
+==145730==  Address 0x4a94990 is 0 bytes inside a block of size 4,096 alloc'd
+==145730==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145730==    by 0x48F31A4: _IO_file_doallocate (filedoalloc.c:101)
+==145730==    by 0x4903513: _IO_doallocbuf (genops.c:347)
+==145730==    by 0x490146B: _IO_file_seekoff@@GLIBC_2.2.5 (fileops.c:938)
+==145730==    by 0x48FCE9D: fseek (fseek.c:36)
+==145730==    by 0x10D1A7: Database_open (db.c:109)
+==145730==    by 0x10FADE: test_create_db (model_tests.c:32)
+==145730==    by 0x110E75: all_tests (model_tests.c:187)
+==145730==    by 0x110E75: all_tests (model_tests.c:182)
+==145730==    by 0x10B34E: main (model_tests.c:200)
+==145730== 
+==145730== Syscall param write(buf) points to uninitialised byte(s)
+==145730==    at 0x498A574: write (write.c:26)
+==145730==    by 0x4901964: _IO_file_write@@GLIBC_2.2.5 (fileops.c:1181)
+==145730==    by 0x4900560: new_do_write (fileops.c:449)
+==145730==    by 0x4900560: _IO_do_write@@GLIBC_2.2.5 (fileops.c:426)
+==145730==    by 0x49010AF: _IO_file_sync@@GLIBC_2.2.5 (fileops.c:799)
+==145730==    by 0x48F3826: fflush (iofflush.c:40)
+==145730==    by 0x10D720: Database_close (db.c:138)
+==145730==    by 0x10D720: Database_close (db.c:129)
+==145730==    by 0x111015: test_destroy_db (model_tests.c:169)
+==145730==    by 0x111015: all_tests (model_tests.c:194)
+==145730==    by 0x111015: all_tests (model_tests.c:182)
+==145730==    by 0x10B34E: main (model_tests.c:200)
+==145730==  Address 0x4a94990 is 0 bytes inside a block of size 4,096 alloc'd
+==145730==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145730==    by 0x48F31A4: _IO_file_doallocate (filedoalloc.c:101)
+==145730==    by 0x4903513: _IO_doallocbuf (genops.c:347)
+==145730==    by 0x490146B: _IO_file_seekoff@@GLIBC_2.2.5 (fileops.c:938)
+==145730==    by 0x48FCE9D: fseek (fseek.c:36)
+==145730==    by 0x10D1A7: Database_open (db.c:109)
+==145730==    by 0x10FADE: test_create_db (model_tests.c:32)
+==145730==    by 0x110E75: all_tests (model_tests.c:187)
+==145730==    by 0x110E75: all_tests (model_tests.c:182)
+==145730==    by 0x10B34E: main (model_tests.c:200)
+==145730== 
+==145730== Invalid read of size 1
+==145730==    at 0x10BD6C: DescriptionTable_destroy (description.c:69)
+==145730==    by 0x10D768: Database_destroy (db.c:197)
+==145730==    by 0x111021: test_destroy_db (model_tests.c:170)
+==145730==    by 0x111021: all_tests (model_tests.c:194)
+==145730==    by 0x111021: all_tests (model_tests.c:182)
+==145730==    by 0x10B34E: main (model_tests.c:200)
+==145730==  Address 0x768324a is 522 bytes inside a block of size 34,078,200 free'd
+==145730==    at 0x484988F: free (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145730==    by 0x10BD80: DescriptionTable_destroy (description.c:70)
+==145730==    by 0x10D768: Database_destroy (db.c:197)
+==145730==    by 0x111021: test_destroy_db (model_tests.c:170)
+==145730==    by 0x111021: all_tests (model_tests.c:194)
+==145730==    by 0x111021: all_tests (model_tests.c:182)
+==145730==    by 0x10B34E: main (model_tests.c:200)
+==145730==  Block was alloc'd at
+==145730==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145730==    by 0x10BCD3: DescriptionTable_create (description.c:56)
+==145730==    by 0x10CFCF: Database_init (db.c:36)
+==145730==    by 0x10D197: Database_open (db.c:106)
+==145730==    by 0x10FADE: test_create_db (model_tests.c:32)
+==145730==    by 0x110E75: all_tests (model_tests.c:187)
+==145730==    by 0x110E75: all_tests (model_tests.c:182)
+==145730==    by 0x10B34E: main (model_tests.c:200)
+==145730== 
+==145730== Invalid free() / delete / delete[] / realloc()
+==145730==    at 0x484988F: free (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145730==    by 0x10D768: Database_destroy (db.c:197)
+==145730==    by 0x111021: test_destroy_db (model_tests.c:170)
+==145730==    by 0x111021: all_tests (model_tests.c:194)
+==145730==    by 0x111021: all_tests (model_tests.c:182)
+==145730==    by 0x10B34E: main (model_tests.c:200)
+==145730==  Address 0x7683040 is 0 bytes inside a block of size 34,078,200 free'd
+==145730==    at 0x484988F: free (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145730==    by 0x10BD80: DescriptionTable_destroy (description.c:70)
+==145730==    by 0x10D768: Database_destroy (db.c:197)
+==145730==    by 0x111021: test_destroy_db (model_tests.c:170)
+==145730==    by 0x111021: all_tests (model_tests.c:194)
+==145730==    by 0x111021: all_tests (model_tests.c:182)
+==145730==    by 0x10B34E: main (model_tests.c:200)
+==145730==  Block was alloc'd at
+==145730==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145730==    by 0x10BCD3: DescriptionTable_create (description.c:56)
+==145730==    by 0x10CFCF: Database_init (db.c:36)
+==145730==    by 0x10D197: Database_open (db.c:106)
+==145730==    by 0x10FADE: test_create_db (model_tests.c:32)
+==145730==    by 0x110E75: all_tests (model_tests.c:187)
+==145730==    by 0x110E75: all_tests (model_tests.c:182)
+==145730==    by 0x10B34E: main (model_tests.c:200)
+==145730== 
+==145730== Invalid free() / delete / delete[] / realloc()
+==145730==    at 0x484988F: free (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145730==    by 0x10C860: InventoryTable_destroy (inventory.c:121)
+==145730==    by 0x10D784: Database_destroy (db.c:205)
+==145730==    by 0x111021: test_destroy_db (model_tests.c:170)
+==145730==    by 0x111021: all_tests (model_tests.c:194)
+==145730==    by 0x111021: all_tests (model_tests.c:182)
+==145730==    by 0x10B34E: main (model_tests.c:200)
+==145730==  Address 0x9703044 is 4 bytes inside a block of size 33,816,064 alloc'd
+==145730==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145730==    by 0x10C7B3: InventoryTable_create (inventory.c:107)
+==145730==    by 0x10CFDA: Database_init (db.c:37)
+==145730==    by 0x10D197: Database_open (db.c:106)
+==145730==    by 0x10FADE: test_create_db (model_tests.c:32)
+==145730==    by 0x110E75: all_tests (model_tests.c:187)
+==145730==    by 0x110E75: all_tests (model_tests.c:182)
+==145730==    by 0x10B34E: main (model_tests.c:200)
+==145730== 
+==145730== Invalid free() / delete / delete[] / realloc()
+==145730==    at 0x484988F: free (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145730==    by 0x10CC70: ItemTable_destroy (items.c:72)
+==145730==    by 0x10D792: Database_destroy (db.c:209)
+==145730==    by 0x111021: test_destroy_db (model_tests.c:170)
+==145730==    by 0x111021: all_tests (model_tests.c:194)
+==145730==    by 0x111021: all_tests (model_tests.c:182)
+==145730==    by 0x10B34E: main (model_tests.c:200)
+==145730==  Address 0x6e63044 is 4 bytes inside a block of size 8,519,554 alloc'd
+==145730==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145730==    by 0x10CBC3: ItemTable_create (items.c:58)
+==145730==    by 0x10CFC4: Database_init (db.c:35)
+==145730==    by 0x10D197: Database_open (db.c:106)
+==145730==    by 0x10FADE: test_create_db (model_tests.c:32)
+==145730==    by 0x110E75: all_tests (model_tests.c:187)
+==145730==    by 0x110E75: all_tests (model_tests.c:182)
+==145730==    by 0x10B34E: main (model_tests.c:200)
+==145730== 
+DEBUG tests/model_tests.c:195: 
+----- test_destroy_db_file
+==145730== 
+==145730== HEAP SUMMARY:
+==145730==     in use at exit: 5,018 bytes in 5 blocks
+==145730==   total heap usage: 24 allocs, 23 frees, 109,926,358 bytes allocated
+==145730== 
+==145730== 130 bytes in 1 blocks are definitely lost in loss record 1 of 5
+==145730==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145730==    by 0x10CACF: ItemRecord_create (items.c:26)
+==145730==    by 0x10E0D1: Database_getOrCreateItem (db.c:383)
+==145730==    by 0x10F882: Item_save (item.c:48)
+==145730==    by 0x11073E: test_create_item (model_tests.c:101)
+==145730==    by 0x110EF1: all_tests (model_tests.c:189)
+==145730==    by 0x110EF1: all_tests (model_tests.c:182)
+==145730==    by 0x10B34E: main (model_tests.c:200)
+==145730== 
+==145730== 272 bytes in 1 blocks are definitely lost in loss record 2 of 5
+==145730==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145730==    by 0x10B54E: CharacterStatsRecord_create (character_stats.c:69)
+==145730==    by 0x10EE3F: Character_save (character.c:74)
+==145730==    by 0x11007F: test_create_character (model_tests.c:66)
+==145730==    by 0x110EBA: all_tests (model_tests.c:188)
+==145730==    by 0x110EBA: all_tests (model_tests.c:182)
+==145730==    by 0x10B34E: main (model_tests.c:200)
+==145730== 
+==145730== 520 bytes in 1 blocks are definitely lost in loss record 3 of 5
+==145730==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145730==    by 0x10BBDF: DescriptionRecord_create (description.c:27)
+==145730==    by 0x10E431: Database_getOrCreateDescription (db.c:454)
+==145730==    by 0x10F891: Item_save (item.c:49)
+==145730==    by 0x11073E: test_create_item (model_tests.c:101)
+==145730==    by 0x110EF1: all_tests (model_tests.c:189)
+==145730==    by 0x110EF1: all_tests (model_tests.c:182)
+==145730==    by 0x10B34E: main (model_tests.c:200)
+==145730== 
+==145730== 2,048 bytes in 1 blocks are definitely lost in loss record 4 of 5
+==145730==    at 0x484D953: calloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145730==    by 0x10F1F8: Inventory_create (inventory.c:27)
+==145730==    by 0x10EC7E: Character_create (character.c:49)
+==145730==    by 0x10F034: Character_load (character.c:109)
+==145730==    by 0x11008E: test_create_character (model_tests.c:69)
+==145730==    by 0x110EBA: all_tests (model_tests.c:188)
+==145730==    by 0x110EBA: all_tests (model_tests.c:182)
+==145730==    by 0x10B34E: main (model_tests.c:200)
+==145730== 
+==145730== 2,048 bytes in 1 blocks are definitely lost in loss record 5 of 5
+==145730==    at 0x484D953: calloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145730==    by 0x10F1F8: Inventory_create (inventory.c:27)
+==145730==    by 0x10EC7E: Character_create (character.c:49)
+==145730==    by 0x10F034: Character_load (character.c:109)
+==145730==    by 0x110A06: test_destroy_and_reload_character (model_tests.c:120)
+==145730==    by 0x110B19: test_add_item_to_inventory (model_tests.c:135)
+==145730==    by 0x110F28: all_tests (model_tests.c:190)
+==145730==    by 0x110F28: all_tests (model_tests.c:182)
+==145730==    by 0x10B34E: main (model_tests.c:200)
+==145730== 
+==145730== LEAK SUMMARY:
+==145730==    definitely lost: 5,018 bytes in 5 blocks
+==145730==    indirectly lost: 0 bytes in 0 blocks
+==145730==      possibly lost: 0 bytes in 0 blocks
+==145730==    still reachable: 0 bytes in 0 blocks
+==145730==         suppressed: 0 bytes in 0 blocks
+==145730== 
+==145730== Use --track-origins=yes to see where uninitialised values come from
+==145730== For lists of detected and suppressed errors, rerun with: -s
+==145730== ERROR SUMMARY: 197150 errors from 18 contexts (suppressed: 0 from 0)
+==145741== Memcheck, a memory error detector
+==145741== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==145741== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
+==145741== Command: ./tests/mork_tests
+==145741== 
+DEBUG tests/mork_tests.c:29: ----- RUNNING: ./tests/mork_tests
+DEBUG tests/mork_tests.c:22: 
+----- test_create
+DEBUG tests/mork_tests.c:23: 
+----- test_functions
+DEBUG tests/mork_tests.c:24: 
+----- test_failures
+==145741== 
+==145741== HEAP SUMMARY:
+==145741==     in use at exit: 0 bytes in 0 blocks
+==145741==   total heap usage: 1 allocs, 1 frees, 1,024 bytes allocated
+==145741== 
+==145741== All heap blocks were freed -- no leaks are possible
+==145741== 
+==145741== For lists of detected and suppressed errors, rerun with: -s
+==145741== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+==145762== Memcheck, a memory error detector
+==145762== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==145762== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
+==145762== Command: ./tests/db_tests
+==145762== 
+DEBUG tests/db_tests.c:88: ----- RUNNING: ./tests/db_tests
+DEBUG tests/db_tests.c:77: 
+----- test_create_db_file
+DEBUG tests/db_tests.c:78: 
+----- test_create
+DEBUG tests/db_tests.c:79: 
+----- test_open
+DEBUG tests/db_tests.c:80: 
+----- test_flush
+==145762== Syscall param write(buf) points to uninitialised byte(s)
+==145762==    at 0x498A574: write (write.c:26)
+==145762==    by 0x4901964: _IO_file_write@@GLIBC_2.2.5 (fileops.c:1181)
+==145762==    by 0x4901BC9: new_do_write (fileops.c:449)
+==145762==    by 0x4901BC9: _IO_new_file_xsputn (fileops.c:1255)
+==145762==    by 0x4901BC9: _IO_file_xsputn@@GLIBC_2.2.5 (fileops.c:1197)
+==145762==    by 0x48F4A01: fwrite (iofwrite.c:39)
+==145762==    by 0x10D6D1: Database_flush (db.c:151)
+==145762==    by 0x10FC13: test_flush (db_tests.c:47)
+==145762==    by 0x10FEC1: all_tests (db_tests.c:80)
+==145762==    by 0x10FEC1: all_tests (db_tests.c:73)
+==145762==    by 0x10B34E: main (db_tests.c:88)
+==145762==  Address 0x4a83953 is 3 bytes inside a block of size 69,632 alloc'd
+==145762==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145762==    by 0x10B873: CharacterStatsTable_create (character_stats.c:115)
+==145762==    by 0x10CFAE: Database_init (db.c:33)
+==145762==    by 0x10D197: Database_open (db.c:106)
+==145762==    by 0x10FB8A: test_open (db_tests.c:39)
+==145762==    by 0x10FE8A: all_tests (stdio2.h:79)
+==145762==    by 0x10FE8A: all_tests (db_tests.c:73)
+==145762==    by 0x10B34E: main (db_tests.c:88)
+==145762== 
+==145762== Syscall param write(buf) points to uninitialised byte(s)
+==145762==    at 0x498A574: write (write.c:26)
+==145762==    by 0x4901964: _IO_file_write@@GLIBC_2.2.5 (fileops.c:1181)
+==145762==    by 0x4900560: new_do_write (fileops.c:449)
+==145762==    by 0x4900560: _IO_do_write@@GLIBC_2.2.5 (fileops.c:426)
+==145762==    by 0x4902F80: _IO_switch_to_get_mode (genops.c:166)
+==145762==    by 0x4901237: _IO_file_seekoff@@GLIBC_2.2.5 (fileops.c:927)
+==145762==    by 0x48FCE9D: fseek (fseek.c:36)
+==145762==    by 0x10D5BA: Database_write (db.c:249)
+==145762==    by 0x10D6D1: Database_flush (db.c:151)
+==145762==    by 0x10FC13: test_flush (db_tests.c:47)
+==145762==    by 0x10FEC1: all_tests (db_tests.c:80)
+==145762==    by 0x10FEC1: all_tests (db_tests.c:73)
+==145762==    by 0x10B34E: main (db_tests.c:88)
+==145762==  Address 0x4a94990 is 0 bytes inside a block of size 4,096 alloc'd
+==145762==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145762==    by 0x48F31A4: _IO_file_doallocate (filedoalloc.c:101)
+==145762==    by 0x4903513: _IO_doallocbuf (genops.c:347)
+==145762==    by 0x490146B: _IO_file_seekoff@@GLIBC_2.2.5 (fileops.c:938)
+==145762==    by 0x48FCE9D: fseek (fseek.c:36)
+==145762==    by 0x10D1A7: Database_open (db.c:109)
+==145762==    by 0x10FB8A: test_open (db_tests.c:39)
+==145762==    by 0x10FE8A: all_tests (stdio2.h:79)
+==145762==    by 0x10FE8A: all_tests (db_tests.c:73)
+==145762==    by 0x10B34E: main (db_tests.c:88)
+==145762== 
+==145762== Syscall param write(buf) points to uninitialised byte(s)
+==145762==    at 0x498A574: write (write.c:26)
+==145762==    by 0x4901964: _IO_file_write@@GLIBC_2.2.5 (fileops.c:1181)
+==145762==    by 0x4900560: new_do_write (fileops.c:449)
+==145762==    by 0x4900560: _IO_do_write@@GLIBC_2.2.5 (fileops.c:426)
+==145762==    by 0x49010AF: _IO_file_sync@@GLIBC_2.2.5 (fileops.c:799)
+==145762==    by 0x48F3826: fflush (iofflush.c:40)
+==145762==    by 0x10FC13: test_flush (db_tests.c:47)
+==145762==    by 0x10FEC1: all_tests (db_tests.c:80)
+==145762==    by 0x10FEC1: all_tests (db_tests.c:73)
+==145762==    by 0x10B34E: main (db_tests.c:88)
+==145762==  Address 0x4a94990 is 0 bytes inside a block of size 4,096 alloc'd
+==145762==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145762==    by 0x48F31A4: _IO_file_doallocate (filedoalloc.c:101)
+==145762==    by 0x4903513: _IO_doallocbuf (genops.c:347)
+==145762==    by 0x490146B: _IO_file_seekoff@@GLIBC_2.2.5 (fileops.c:938)
+==145762==    by 0x48FCE9D: fseek (fseek.c:36)
+==145762==    by 0x10D1A7: Database_open (db.c:109)
+==145762==    by 0x10FB8A: test_open (db_tests.c:39)
+==145762==    by 0x10FE8A: all_tests (stdio2.h:79)
+==145762==    by 0x10FE8A: all_tests (db_tests.c:73)
+==145762==    by 0x10B34E: main (db_tests.c:88)
+==145762== 
+DEBUG tests/db_tests.c:81: 
+----- test_close
+DEBUG tests/db_tests.c:82: 
+----- test_destroy
+DEBUG tests/db_tests.c:83: 
+----- test_delete_db_file
+==145762== 
+==145762== HEAP SUMMARY:
+==145762==     in use at exit: 0 bytes in 0 blocks
+==145762==   total heap usage: 10 allocs, 10 frees, 109,912,448 bytes allocated
+==145762== 
+==145762== All heap blocks were freed -- no leaks are possible
+==145762== 
+==145762== Use --track-origins=yes to see where uninitialised values come from
+==145762== For lists of detected and suppressed errors, rerun with: -s
+==145762== ERROR SUMMARY: 14 errors from 3 contexts (suppressed: 0 from 0)
+==145775== Memcheck, a memory error detector
+==145775== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==145775== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
+==145775== Command: ./tests/model_tests
+==145775== 
+DEBUG tests/model_tests.c:200: ----- RUNNING: ./tests/model_tests
+DEBUG tests/model_tests.c:186: 
+----- test_create_db_file
+DEBUG tests/model_tests.c:187: 
+----- test_create_db
+DEBUG tests/model_tests.c:188: 
+----- test_create_character
+==145775== Conditional jump or move depends on uninitialised value(s)
+==145775==    at 0x485036C: strcmp (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145775==    by 0x10BA5B: CharacterStatsTable_getByName (character_stats.c:160)
+==145775==    by 0x10ED94: Character_save (character.c:69)
+==145775==    by 0x11007F: test_create_character (model_tests.c:66)
+==145775==    by 0x110EBA: all_tests (model_tests.c:188)
+==145775==    by 0x110EBA: all_tests (model_tests.c:182)
+==145775==    by 0x10B34E: main (model_tests.c:200)
+==145775== 
+==145775== Conditional jump or move depends on uninitialised value(s)
+==145775==    at 0x4850394: strcmp (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145775==    by 0x10BA5B: CharacterStatsTable_getByName (character_stats.c:160)
+==145775==    by 0x10ED94: Character_save (character.c:69)
+==145775==    by 0x11007F: test_create_character (model_tests.c:66)
+==145775==    by 0x110EBA: all_tests (model_tests.c:188)
+==145775==    by 0x110EBA: all_tests (model_tests.c:182)
+==145775==    by 0x10B34E: main (model_tests.c:200)
+==145775== 
+[ERROR] (src/coredb/tables/character_stats.c:164: errno: None) CharacterStatsTable_getByName: Name not found (Mork)
+DEBUG tests/model_tests.c:189: 
+----- test_create_item
+==145775== Conditional jump or move depends on uninitialised value(s)
+==145775==    at 0x484FACC: strncmp (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145775==    by 0x10CEA1: ItemTable_getByName (items.c:133)
+==145775==    by 0x10E0A2: Database_getOrCreateItem (db.c:380)
+==145775==    by 0x10F882: Item_save (item.c:48)
+==145775==    by 0x11073E: test_create_item (model_tests.c:101)
+==145775==    by 0x110EF1: all_tests (model_tests.c:189)
+==145775==    by 0x110EF1: all_tests (model_tests.c:182)
+==145775==    by 0x10B34E: main (model_tests.c:200)
+==145775== 
+==145775== Conditional jump or move depends on uninitialised value(s)
+==145775==    at 0x484FACC: strncmp (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145775==    by 0x10BFB7: DescriptionTable_get_by_prefix (description.c:144)
+==145775==    by 0x10E3AD: Database_getOrCreateDescription (db.c:452)
+==145775==    by 0x10F891: Item_save (item.c:49)
+==145775==    by 0x11073E: test_create_item (model_tests.c:101)
+==145775==    by 0x110EF1: all_tests (model_tests.c:189)
+==145775==    by 0x110EF1: all_tests (model_tests.c:182)
+==145775==    by 0x10B34E: main (model_tests.c:200)
+==145775== 
+DEBUG tests/model_tests.c:190: 
+----- test_add_item_to_inventory
+DEBUG tests/model_tests.c:191: 
+----- test_remove_item_from_inventory
+==145775== Invalid read of size 1
+==145775==    at 0x484FAC5: strncmp (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145775==    by 0x10F2E0: Inventory_removeItem (inventory.c:70)
+==145775==    by 0x110C7A: test_remove_item_from_inventory (model_tests.c:149)
+==145775==    by 0x110F63: all_tests (model_tests.c:191)
+==145775==    by 0x110F63: all_tests (model_tests.c:182)
+==145775==    by 0x10B34E: main (model_tests.c:200)
+==145775==  Address 0x4a976a0 is 0 bytes inside a block of size 636 free'd
+==145775==    at 0x484988F: free (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145775==    by 0x10F284: Inventory_destroy (inventory.c:45)
+==145775==    by 0x10ED68: Character_destroy (character.c:61)
+==145775==    by 0x1109F3: test_destroy_and_reload_character (model_tests.c:119)
+==145775==    by 0x110B19: test_add_item_to_inventory (model_tests.c:135)
+==145775==    by 0x110F28: all_tests (model_tests.c:190)
+==145775==    by 0x110F28: all_tests (model_tests.c:182)
+==145775==    by 0x10B34E: main (model_tests.c:200)
+==145775==  Block was alloc'd at
+==145775==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145775==    by 0x10F7C7: Item_create (item.c:26)
+==145775==    by 0x1106B0: test_create_item (model_tests.c:95)
+==145775==    by 0x110EF1: all_tests (model_tests.c:189)
+==145775==    by 0x110EF1: all_tests (model_tests.c:182)
+==145775==    by 0x10B34E: main (model_tests.c:200)
+==145775== 
+DEBUG tests/model_tests.c:192: 
+----- test_destroy_item
+==145775== Invalid free() / delete / delete[] / realloc()
+==145775==    at 0x484988F: free (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145775==    by 0x110FA3: test_destroy_item (model_tests.c:157)
+==145775==    by 0x110FA3: all_tests (model_tests.c:192)
+==145775==    by 0x110FA3: all_tests (model_tests.c:182)
+==145775==    by 0x10B34E: main (model_tests.c:200)
+==145775==  Address 0x4a976a0 is 0 bytes inside a block of size 636 free'd
+==145775==    at 0x484988F: free (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145775==    by 0x10F284: Inventory_destroy (inventory.c:45)
+==145775==    by 0x10ED68: Character_destroy (character.c:61)
+==145775==    by 0x1109F3: test_destroy_and_reload_character (model_tests.c:119)
+==145775==    by 0x110B19: test_add_item_to_inventory (model_tests.c:135)
+==145775==    by 0x110F28: all_tests (model_tests.c:190)
+==145775==    by 0x110F28: all_tests (model_tests.c:182)
+==145775==    by 0x10B34E: main (model_tests.c:200)
+==145775==  Block was alloc'd at
+==145775==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145775==    by 0x10F7C7: Item_create (item.c:26)
+==145775==    by 0x1106B0: test_create_item (model_tests.c:95)
+==145775==    by 0x110EF1: all_tests (model_tests.c:189)
+==145775==    by 0x110EF1: all_tests (model_tests.c:182)
+==145775==    by 0x10B34E: main (model_tests.c:200)
+==145775== 
+DEBUG tests/model_tests.c:193: 
+----- test_destroy_character
+DEBUG tests/model_tests.c:194: 
+----- test_destroy_db
+==145775== Syscall param write(buf) points to uninitialised byte(s)
+==145775==    at 0x498A574: write (write.c:26)
+==145775==    by 0x4901964: _IO_file_write@@GLIBC_2.2.5 (fileops.c:1181)
+==145775==    by 0x4901BC9: new_do_write (fileops.c:449)
+==145775==    by 0x4901BC9: _IO_new_file_xsputn (fileops.c:1255)
+==145775==    by 0x4901BC9: _IO_file_xsputn@@GLIBC_2.2.5 (fileops.c:1197)
+==145775==    by 0x48F4A01: fwrite (iofwrite.c:39)
+==145775==    by 0x10D6D1: Database_flush (db.c:151)
+==145775==    by 0x10D720: Database_close (db.c:138)
+==145775==    by 0x10D720: Database_close (db.c:129)
+==145775==    by 0x111015: test_destroy_db (model_tests.c:169)
+==145775==    by 0x111015: all_tests (model_tests.c:194)
+==145775==    by 0x111015: all_tests (model_tests.c:182)
+==145775==    by 0x10B34E: main (model_tests.c:200)
+==145775==  Address 0x4a83954 is 4 bytes inside a block of size 69,632 alloc'd
+==145775==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145775==    by 0x10B873: CharacterStatsTable_create (character_stats.c:115)
+==145775==    by 0x10CFAE: Database_init (db.c:33)
+==145775==    by 0x10D197: Database_open (db.c:106)
+==145775==    by 0x10FADE: test_create_db (model_tests.c:32)
+==145775==    by 0x110E75: all_tests (model_tests.c:187)
+==145775==    by 0x110E75: all_tests (model_tests.c:182)
+==145775==    by 0x10B34E: main (model_tests.c:200)
+==145775== 
+==145775== Syscall param write(buf) points to uninitialised byte(s)
+==145775==    at 0x498A574: write (write.c:26)
+==145775==    by 0x4901964: _IO_file_write@@GLIBC_2.2.5 (fileops.c:1181)
+==145775==    by 0x4900560: new_do_write (fileops.c:449)
+==145775==    by 0x4900560: _IO_do_write@@GLIBC_2.2.5 (fileops.c:426)
+==145775==    by 0x4902F80: _IO_switch_to_get_mode (genops.c:166)
+==145775==    by 0x4901237: _IO_file_seekoff@@GLIBC_2.2.5 (fileops.c:927)
+==145775==    by 0x48FCE9D: fseek (fseek.c:36)
+==145775==    by 0x10D5BA: Database_write (db.c:249)
+==145775==    by 0x10D6D1: Database_flush (db.c:151)
+==145775==    by 0x10D720: Database_close (db.c:138)
+==145775==    by 0x10D720: Database_close (db.c:129)
+==145775==    by 0x111015: test_destroy_db (model_tests.c:169)
+==145775==    by 0x111015: all_tests (model_tests.c:194)
+==145775==    by 0x111015: all_tests (model_tests.c:182)
+==145775==    by 0x10B34E: main (model_tests.c:200)
+==145775==  Address 0x4a94990 is 0 bytes inside a block of size 4,096 alloc'd
+==145775==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145775==    by 0x48F31A4: _IO_file_doallocate (filedoalloc.c:101)
+==145775==    by 0x4903513: _IO_doallocbuf (genops.c:347)
+==145775==    by 0x490146B: _IO_file_seekoff@@GLIBC_2.2.5 (fileops.c:938)
+==145775==    by 0x48FCE9D: fseek (fseek.c:36)
+==145775==    by 0x10D1A7: Database_open (db.c:109)
+==145775==    by 0x10FADE: test_create_db (model_tests.c:32)
+==145775==    by 0x110E75: all_tests (model_tests.c:187)
+==145775==    by 0x110E75: all_tests (model_tests.c:182)
+==145775==    by 0x10B34E: main (model_tests.c:200)
+==145775== 
+==145775== Syscall param write(buf) points to uninitialised byte(s)
+==145775==    at 0x498A574: write (write.c:26)
+==145775==    by 0x4901964: _IO_file_write@@GLIBC_2.2.5 (fileops.c:1181)
+==145775==    by 0x4900560: new_do_write (fileops.c:449)
+==145775==    by 0x4900560: _IO_do_write@@GLIBC_2.2.5 (fileops.c:426)
+==145775==    by 0x49010AF: _IO_file_sync@@GLIBC_2.2.5 (fileops.c:799)
+==145775==    by 0x48F3826: fflush (iofflush.c:40)
+==145775==    by 0x10D720: Database_close (db.c:138)
+==145775==    by 0x10D720: Database_close (db.c:129)
+==145775==    by 0x111015: test_destroy_db (model_tests.c:169)
+==145775==    by 0x111015: all_tests (model_tests.c:194)
+==145775==    by 0x111015: all_tests (model_tests.c:182)
+==145775==    by 0x10B34E: main (model_tests.c:200)
+==145775==  Address 0x4a94990 is 0 bytes inside a block of size 4,096 alloc'd
+==145775==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145775==    by 0x48F31A4: _IO_file_doallocate (filedoalloc.c:101)
+==145775==    by 0x4903513: _IO_doallocbuf (genops.c:347)
+==145775==    by 0x490146B: _IO_file_seekoff@@GLIBC_2.2.5 (fileops.c:938)
+==145775==    by 0x48FCE9D: fseek (fseek.c:36)
+==145775==    by 0x10D1A7: Database_open (db.c:109)
+==145775==    by 0x10FADE: test_create_db (model_tests.c:32)
+==145775==    by 0x110E75: all_tests (model_tests.c:187)
+==145775==    by 0x110E75: all_tests (model_tests.c:182)
+==145775==    by 0x10B34E: main (model_tests.c:200)
+==145775== 
+==145775== Invalid read of size 1
+==145775==    at 0x10BD6C: DescriptionTable_destroy (description.c:69)
+==145775==    by 0x10D768: Database_destroy (db.c:197)
+==145775==    by 0x111021: test_destroy_db (model_tests.c:170)
+==145775==    by 0x111021: all_tests (model_tests.c:194)
+==145775==    by 0x111021: all_tests (model_tests.c:182)
+==145775==    by 0x10B34E: main (model_tests.c:200)
+==145775==  Address 0x768324a is 522 bytes inside a block of size 34,078,200 free'd
+==145775==    at 0x484988F: free (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145775==    by 0x10BD80: DescriptionTable_destroy (description.c:70)
+==145775==    by 0x10D768: Database_destroy (db.c:197)
+==145775==    by 0x111021: test_destroy_db (model_tests.c:170)
+==145775==    by 0x111021: all_tests (model_tests.c:194)
+==145775==    by 0x111021: all_tests (model_tests.c:182)
+==145775==    by 0x10B34E: main (model_tests.c:200)
+==145775==  Block was alloc'd at
+==145775==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145775==    by 0x10BCD3: DescriptionTable_create (description.c:56)
+==145775==    by 0x10CFCF: Database_init (db.c:36)
+==145775==    by 0x10D197: Database_open (db.c:106)
+==145775==    by 0x10FADE: test_create_db (model_tests.c:32)
+==145775==    by 0x110E75: all_tests (model_tests.c:187)
+==145775==    by 0x110E75: all_tests (model_tests.c:182)
+==145775==    by 0x10B34E: main (model_tests.c:200)
+==145775== 
+==145775== Invalid free() / delete / delete[] / realloc()
+==145775==    at 0x484988F: free (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145775==    by 0x10D768: Database_destroy (db.c:197)
+==145775==    by 0x111021: test_destroy_db (model_tests.c:170)
+==145775==    by 0x111021: all_tests (model_tests.c:194)
+==145775==    by 0x111021: all_tests (model_tests.c:182)
+==145775==    by 0x10B34E: main (model_tests.c:200)
+==145775==  Address 0x7683040 is 0 bytes inside a block of size 34,078,200 free'd
+==145775==    at 0x484988F: free (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145775==    by 0x10BD80: DescriptionTable_destroy (description.c:70)
+==145775==    by 0x10D768: Database_destroy (db.c:197)
+==145775==    by 0x111021: test_destroy_db (model_tests.c:170)
+==145775==    by 0x111021: all_tests (model_tests.c:194)
+==145775==    by 0x111021: all_tests (model_tests.c:182)
+==145775==    by 0x10B34E: main (model_tests.c:200)
+==145775==  Block was alloc'd at
+==145775==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145775==    by 0x10BCD3: DescriptionTable_create (description.c:56)
+==145775==    by 0x10CFCF: Database_init (db.c:36)
+==145775==    by 0x10D197: Database_open (db.c:106)
+==145775==    by 0x10FADE: test_create_db (model_tests.c:32)
+==145775==    by 0x110E75: all_tests (model_tests.c:187)
+==145775==    by 0x110E75: all_tests (model_tests.c:182)
+==145775==    by 0x10B34E: main (model_tests.c:200)
+==145775== 
+==145775== Invalid free() / delete / delete[] / realloc()
+==145775==    at 0x484988F: free (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145775==    by 0x10C860: InventoryTable_destroy (inventory.c:121)
+==145775==    by 0x10D784: Database_destroy (db.c:205)
+==145775==    by 0x111021: test_destroy_db (model_tests.c:170)
+==145775==    by 0x111021: all_tests (model_tests.c:194)
+==145775==    by 0x111021: all_tests (model_tests.c:182)
+==145775==    by 0x10B34E: main (model_tests.c:200)
+==145775==  Address 0x9703044 is 4 bytes inside a block of size 33,816,064 alloc'd
+==145775==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145775==    by 0x10C7B3: InventoryTable_create (inventory.c:107)
+==145775==    by 0x10CFDA: Database_init (db.c:37)
+==145775==    by 0x10D197: Database_open (db.c:106)
+==145775==    by 0x10FADE: test_create_db (model_tests.c:32)
+==145775==    by 0x110E75: all_tests (model_tests.c:187)
+==145775==    by 0x110E75: all_tests (model_tests.c:182)
+==145775==    by 0x10B34E: main (model_tests.c:200)
+==145775== 
+==145775== Invalid free() / delete / delete[] / realloc()
+==145775==    at 0x484988F: free (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145775==    by 0x10CC70: ItemTable_destroy (items.c:72)
+==145775==    by 0x10D792: Database_destroy (db.c:209)
+==145775==    by 0x111021: test_destroy_db (model_tests.c:170)
+==145775==    by 0x111021: all_tests (model_tests.c:194)
+==145775==    by 0x111021: all_tests (model_tests.c:182)
+==145775==    by 0x10B34E: main (model_tests.c:200)
+==145775==  Address 0x6e63044 is 4 bytes inside a block of size 8,519,554 alloc'd
+==145775==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145775==    by 0x10CBC3: ItemTable_create (items.c:58)
+==145775==    by 0x10CFC4: Database_init (db.c:35)
+==145775==    by 0x10D197: Database_open (db.c:106)
+==145775==    by 0x10FADE: test_create_db (model_tests.c:32)
+==145775==    by 0x110E75: all_tests (model_tests.c:187)
+==145775==    by 0x110E75: all_tests (model_tests.c:182)
+==145775==    by 0x10B34E: main (model_tests.c:200)
+==145775== 
+DEBUG tests/model_tests.c:195: 
+----- test_destroy_db_file
+==145775== 
+==145775== HEAP SUMMARY:
+==145775==     in use at exit: 5,018 bytes in 5 blocks
+==145775==   total heap usage: 24 allocs, 23 frees, 109,926,358 bytes allocated
+==145775== 
+==145775== 130 bytes in 1 blocks are definitely lost in loss record 1 of 5
+==145775==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145775==    by 0x10CACF: ItemRecord_create (items.c:26)
+==145775==    by 0x10E0D1: Database_getOrCreateItem (db.c:383)
+==145775==    by 0x10F882: Item_save (item.c:48)
+==145775==    by 0x11073E: test_create_item (model_tests.c:101)
+==145775==    by 0x110EF1: all_tests (model_tests.c:189)
+==145775==    by 0x110EF1: all_tests (model_tests.c:182)
+==145775==    by 0x10B34E: main (model_tests.c:200)
+==145775== 
+==145775== 272 bytes in 1 blocks are definitely lost in loss record 2 of 5
+==145775==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145775==    by 0x10B54E: CharacterStatsRecord_create (character_stats.c:69)
+==145775==    by 0x10EE3F: Character_save (character.c:74)
+==145775==    by 0x11007F: test_create_character (model_tests.c:66)
+==145775==    by 0x110EBA: all_tests (model_tests.c:188)
+==145775==    by 0x110EBA: all_tests (model_tests.c:182)
+==145775==    by 0x10B34E: main (model_tests.c:200)
+==145775== 
+==145775== 520 bytes in 1 blocks are definitely lost in loss record 3 of 5
+==145775==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145775==    by 0x10BBDF: DescriptionRecord_create (description.c:27)
+==145775==    by 0x10E431: Database_getOrCreateDescription (db.c:454)
+==145775==    by 0x10F891: Item_save (item.c:49)
+==145775==    by 0x11073E: test_create_item (model_tests.c:101)
+==145775==    by 0x110EF1: all_tests (model_tests.c:189)
+==145775==    by 0x110EF1: all_tests (model_tests.c:182)
+==145775==    by 0x10B34E: main (model_tests.c:200)
+==145775== 
+==145775== 2,048 bytes in 1 blocks are definitely lost in loss record 4 of 5
+==145775==    at 0x484D953: calloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145775==    by 0x10F1F8: Inventory_create (inventory.c:27)
+==145775==    by 0x10EC7E: Character_create (character.c:49)
+==145775==    by 0x10F034: Character_load (character.c:109)
+==145775==    by 0x11008E: test_create_character (model_tests.c:69)
+==145775==    by 0x110EBA: all_tests (model_tests.c:188)
+==145775==    by 0x110EBA: all_tests (model_tests.c:182)
+==145775==    by 0x10B34E: main (model_tests.c:200)
+==145775== 
+==145775== 2,048 bytes in 1 blocks are definitely lost in loss record 5 of 5
+==145775==    at 0x484D953: calloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==145775==    by 0x10F1F8: Inventory_create (inventory.c:27)
+==145775==    by 0x10EC7E: Character_create (character.c:49)
+==145775==    by 0x10F034: Character_load (character.c:109)
+==145775==    by 0x110A06: test_destroy_and_reload_character (model_tests.c:120)
+==145775==    by 0x110B19: test_add_item_to_inventory (model_tests.c:135)
+==145775==    by 0x110F28: all_tests (model_tests.c:190)
+==145775==    by 0x110F28: all_tests (model_tests.c:182)
+==145775==    by 0x10B34E: main (model_tests.c:200)
+==145775== 
+==145775== LEAK SUMMARY:
+==145775==    definitely lost: 5,018 bytes in 5 blocks
+==145775==    indirectly lost: 0 bytes in 0 blocks
+==145775==      possibly lost: 0 bytes in 0 blocks
+==145775==    still reachable: 0 bytes in 0 blocks
+==145775==         suppressed: 0 bytes in 0 blocks
+==145775== 
+==145775== Use --track-origins=yes to see where uninitialised values come from
+==145775== For lists of detected and suppressed errors, rerun with: -s
+==145775== ERROR SUMMARY: 197150 errors from 18 contexts (suppressed: 0 from 0)
+==145785== Memcheck, a memory error detector
+==145785== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==145785== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
+==145785== Command: ./tests/mork_tests
+==145785== 
+DEBUG tests/mork_tests.c:29: ----- RUNNING: ./tests/mork_tests
+DEBUG tests/mork_tests.c:22: 
+----- test_create
+DEBUG tests/mork_tests.c:23: 
+----- test_functions
+DEBUG tests/mork_tests.c:24: 
+----- test_failures
+==145785== 
+==145785== HEAP SUMMARY:
+==145785==     in use at exit: 0 bytes in 0 blocks
+==145785==   total heap usage: 1 allocs, 1 frees, 1,024 bytes allocated
+==145785== 
+==145785== All heap blocks were freed -- no leaks are possible
+==145785== 
+==145785== For lists of detected and suppressed errors, rerun with: -s
+==145785== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)

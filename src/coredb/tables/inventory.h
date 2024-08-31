@@ -29,12 +29,12 @@ struct InventoryRecord {
 
 struct InventoryRecord* InventoryRecord_create(unsigned short id, unsigned short owner_id);
 void InventoryRecord_destroy(struct InventoryRecord* record);
-void InventoryRecord_add_item(struct InventoryRecord* record, unsigned short item_id);
-void InventoryRecord_remove_item(struct InventoryRecord* record, unsigned short item_id);
-unsigned short InventoryRecord_get_item_count(struct InventoryRecord* record);
-unsigned short InventoryRecord_get_item(struct InventoryRecord* record, unsigned short index);
-unsigned short InventoryRecord_get_id(struct InventoryRecord* record);
-unsigned short InventoryRecord_get_owner_id(struct InventoryRecord* record);
+void InventoryRecord_addItem(struct InventoryRecord* record, unsigned short item_id);
+void InventoryRecord_removeItem(struct InventoryRecord* record, unsigned short item_id);
+unsigned short InventoryRecord_getItemCount(struct InventoryRecord* record);
+unsigned short InventoryRecord_getItem(struct InventoryRecord* record, unsigned short index);
+unsigned short InventoryRecord_getID(struct InventoryRecord* record);
+unsigned short InventoryRecord_getOwnerID(struct InventoryRecord* record);
 
 struct InventoryTable {
     unsigned short nextEmptyRow;
@@ -45,8 +45,8 @@ struct InventoryTable {
 struct InventoryTable* InventoryTable_create();
 void InventoryTable_init(struct InventoryTable* table);
 void InventoryTable_destroy(struct InventoryTable* table);
-unsigned short InventoryTable_add(struct InventoryTable* table, unsigned short owner_id);
+unsigned short InventoryTable_add(struct InventoryTable* table, unsigned short owner_id, int junction_id);
+unsigned short InventoryTable_update(struct InventoryTable *table, struct InventoryRecord *record, int id);
 void InventoryTable_remove(struct InventoryTable* table, unsigned short id);
 struct InventoryRecord* InventoryTable_get(struct InventoryTable* table, unsigned short id);
-struct InventoryRecord* InventoryTable_get_by_owner(struct InventoryTable* table, unsigned short owner_id);
-unsigned short InventoryTable_set(struct InventoryTable *table, struct InventoryRecord *record);
+struct InventoryRecord* InventoryTable_getByOwner(struct InventoryTable* table, unsigned short owner_id);

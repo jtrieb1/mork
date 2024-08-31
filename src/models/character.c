@@ -47,6 +47,7 @@ struct Character *Character_create(const char *name, unsigned short strength, un
 
     // Character starts with empty inventory
     character->inventory = Inventory_create();
+    check(character->inventory, "Failed to create inventory");
 
     return character;
 
@@ -64,31 +65,71 @@ void Character_destroy(struct Character *character)
 
 void Character_save(struct Database *db, struct Character *character)
 {
-    struct CharacterStatsRecord *record = CharacterStatsRecord_create(
-        character->name,
-        character->level,
-        character->experience,
-        character->health,
-        character->max_health,
-        character->mana,
-        character->max_mana,
-        character->strength,
-        character->dexterity,
-        character->intelligence,
-        character->wisdom,
-        character->charisma,
-        character->funkiness
-    );
-    check(record, "Failed to create character record");
+    int character_id = -1;
+    struct CharacterStatsRecord *existing = Database_getCharacterStatsByName(db, character->name);
+    if (existing != NULL) {
+        character_id = Database_updateCharacterStats(db, existing, existing->id);
+        check(character_id != -1, "Failed to update character record");
+    } else {
+        struct CharacterStatsRecord *record = CharacterStatsRecord_create(
+            character->name,
+            character->level,
+            character->experience,
+            character->health,
+            character->max_health,
+            character->mana,
+            character->max_mana,
+            character->strength,
+            character->dexterity,
+            character->intelligence,
+            character->wisdom,
+            character->charisma,
+            character->funkiness
+        );
+        check(record, "Failed to create character record");
 
-    Database_set_character_stats(db, record);
+        character_id = Database_createCharacterStats(db, record);
+        check(character_id != -1, "Failed to create character record");
+    }
 
     // Save inventory
-    Inventory_save(db, character->name,  character->inventory);
-
+    check(Inventory_save(db, character_id, character->inventory) != -1, "Failed to save inventory");\
     return;
 
 error:
 
     return;
+}
+
+struct Character *Character_load(struct Database *db, char *name)
+{
+    struct CharacterStatsRecord *record = Database_getCharacterStatsByName(db, name);
+    check(record != NULL, "Failed to load character record");
+
+    struct Character *character = Character_create(
+        record->name,
+        GET_STAT(record->stats, STRENGTH),
+        GET_STAT(record->stats, DEXTERITY),
+        GET_STAT(record->stats, INTELLIGENCE),
+        GET_STAT(record->stats, WISDOM),
+        GET_STAT(record->stats, CHARISMA),
+        GET_STAT(record->stats, FUNKINESS)
+    );
+    check(character, "Failed to create character");
+
+    character->level = record->level;
+    character->experience = record->experience;
+    character->health = record->health_and_mana;
+    character->max_health = record->max_health_and_mana;
+    character->mana = record->health_and_mana;
+    character->max_mana = record->max_health_and_mana;
+
+    // Load inventory
+    character->inventory = Inventory_load(db, record->id);
+    check(character->inventory, "Failed to load inventory");
+
+    return character;
+
+error:
+    return NULL;
 }

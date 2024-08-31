@@ -107,21 +107,17 @@ void CharacterStatsRecord_print(struct CharacterStatsRecord *rec);
 // We know that the maximum number of rows is 256,
 // so we can use unsigned chars to store row index data
 struct CharacterStatsTable {
-    unsigned char nextEmptyRow;
-    unsigned char maxOccupiedRow;
     struct CharacterStatsRecord rows[MAX_ROWS_CS];
 };
 
 struct CharacterStatsTable *CharacterStatsTable_create();
 
 void CharacterStatsTable_init(struct CharacterStatsTable *table);
-// Returns index of the row
-unsigned char CharacterStatsTable_set(
-    struct CharacterStatsTable *table,
-    struct CharacterStatsRecord *record
-);
+unsigned char CharacterStatsTable_newRow(struct CharacterStatsTable *table, struct CharacterStatsRecord *record);
+unsigned char CharacterStatsTable_update(struct CharacterStatsTable *table, struct CharacterStatsRecord *record, int id);
+
 struct CharacterStatsRecord *CharacterStatsTable_get(struct CharacterStatsTable *table, int id);
-struct CharacterStatsRecord *CharacterStatsTable_get_by_name(struct CharacterStatsTable *table, char *name);
+struct CharacterStatsRecord *CharacterStatsTable_getByName(struct CharacterStatsTable *table, char *name);
 void CharacterStatsTable_delete(struct CharacterStatsTable *table, int id);
 
 void CharacterStatsTable_destroy(struct CharacterStatsTable *table);

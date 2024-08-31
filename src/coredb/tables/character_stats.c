@@ -20,25 +20,35 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <lcthw/dbg.h>
 
+static unsigned short findNextRowToFill(struct CharacterStatsTable *table)
+{
+    unsigned short idx = 0;
+    for (int i = 0; i < MAX_ROWS_CS; i++) {
+        if (table->rows[i].id == 0) {
+            idx = i;
+            break;
+        }
+    }
+    if (idx == 0) {
+        // No empty rows, so find oldest and overwrite
+        int min_id = 65535;
+        for (int i = 0; i < MAX_ROWS_CS; i++) {
+            if (table->rows[i].id < min_id) {
+                min_id = table->rows[i].id;
+                idx = i;
+            }
+        }
+    }
+    return idx;
+}
+
 struct CharacterStatsRecord *CharacterStatsRecord_default() {
     struct CharacterStatsRecord *record = (struct CharacterStatsRecord *)malloc(sizeof(struct CharacterStatsRecord));
     check_mem(record);
-    CharacterStatsRecord_init(record);
     return record;
 
 error:
     return NULL;
-}
-
-void CharacterStatsRecord_init(struct CharacterStatsRecord *record) {
-    record->id = 0;
-    record->set = 0;
-    record->name[0] = '\0';
-    record->level = 0;
-    record->experience = 0;
-    record->health_and_mana = 0;
-    record->max_health_and_mana = 0;
-    record->stats = 0;
 }
 
 struct CharacterStatsRecord *CharacterStatsRecord_create(
@@ -58,7 +68,6 @@ struct CharacterStatsRecord *CharacterStatsRecord_create(
 ) {
     struct CharacterStatsRecord *record = (struct CharacterStatsRecord *)malloc(sizeof(struct CharacterStatsRecord));
     check_mem(record);
-    CharacterStatsRecord_init(record);
     record->id = 0;
     record->set = 0;
     strncpy(record->name, name, MAX_NAME_LEN - 1);
@@ -113,65 +122,32 @@ error:
 }
 
 void CharacterStatsTable_init(struct CharacterStatsTable *table) {
-    table->nextEmptyRow = 0;
-    table->maxOccupiedRow = 0;
     for (int i = 0; i < MAX_ROWS_CS; i++) {
         table->rows[i].id = 0;
         table->rows[i].set = 0;
     }
 }
 
-unsigned char CharacterStatsTable_set(
-    struct CharacterStatsTable *table,
-    struct CharacterStatsRecord *new_row
-) {
-    // Check for existing row with matching id
-    for (unsigned char i = 0; i < table->maxOccupiedRow; i++) {
-        if (table->rows[i].id == new_row->id) {
-            table->rows[i] = *new_row;
-            return i;
-        }
-    }
+unsigned char CharacterStatsTable_newRow(struct CharacterStatsTable *table, struct CharacterStatsRecord *record)
+{
+    unsigned short idx = findNextRowToFill(table);
+    table->rows[idx] = *record;
+    return record->id;
+}
 
-    // If no existing row with matching id, add new row
-    if (table->maxOccupiedRow < MAX_ROWS_CS - 1) {
-        // Table is not full here
-        // Find where the row needs to go
-        // Is nextEmptyRow empty?
-        if (table->rows[table->nextEmptyRow].set == 0) {
-            table->rows[table->nextEmptyRow] = *new_row;
-            table->maxOccupiedRow = table->nextEmptyRow;
-            table->nextEmptyRow++;
-            return table->maxOccupiedRow;
-        } else {
-            // Find the next empty row
-            for (unsigned char i = 0; i < MAX_ROWS_CS - 1; i++) {
-                if (table->rows[i].set == 0) {
-                    table->rows[i] = *new_row;
-                    table->maxOccupiedRow = i;
-                    table->nextEmptyRow = i + 1;
-                    return table->maxOccupiedRow;
-                }
-            }
-            // No empty row found
-            return -1; // This is a really unexpected scenario, so panic
+unsigned char CharacterStatsTable_update(struct CharacterStatsTable *table, struct CharacterStatsRecord *record, int id)
+{
+    for (int i = 0; i < MAX_ROWS_CS; i++) {
+        if (table->rows[i].id == id) {
+            table->rows[i] = *record;
+            return id;
         }
-    } else {
-        // Table is full
-        unsigned char oldestRow = 0;
-        // The oldest row is the row with the lowest id
-        for (unsigned char i = 0; i < MAX_ROWS_CS - 1; i++) {
-            if (table->rows[i].id < table->rows[oldestRow].id) {
-                oldestRow = i;
-            }
-        }
-        table->rows[oldestRow] = *new_row;
-        return oldestRow;
     }
+    return CharacterStatsTable_newRow(table, record);
 }
 
 struct CharacterStatsRecord *CharacterStatsTable_get(struct CharacterStatsTable *table, int id) {
-    for (int i = 0; i < table->maxOccupiedRow; i++) {
+    for (int i = 0; i < MAX_ROWS_CS; i++) {
         if (table->rows[i].id == id) {
             return &table->rows[i];
         }
@@ -179,17 +155,18 @@ struct CharacterStatsRecord *CharacterStatsTable_get(struct CharacterStatsTable 
     return NULL;
 }
 
-struct CharacterStatsRecord *CharacterStatsTable_get_by_name(struct CharacterStatsTable *table, char *name) {
-    for (int i = 0; i < table->maxOccupiedRow; i++) {
+struct CharacterStatsRecord *CharacterStatsTable_getByName(struct CharacterStatsTable *table, char *name) {
+    for (int i = 0; i < MAX_ROWS_CS; i++) {
         if (strcmp(table->rows[i].name, name) == 0) {
             return &table->rows[i];
         }
     }
+    log_err("CharacterStatsTable_getByName: Name not found (%s)", name);
     return NULL;
 }
 
 void CharacterStatsTable_delete(struct CharacterStatsTable *table, int id) {
-    for (int i = 0; i < table->maxOccupiedRow; i++) {
+    for (int i = 0; i < MAX_ROWS_CS; i++) {
         if (table->rows[i].id == id) {
             table->rows[i].set = 0;
             return;
@@ -198,7 +175,7 @@ void CharacterStatsTable_delete(struct CharacterStatsTable *table, int id) {
 }
 
 void CharacterStatsTable_print(struct CharacterStatsTable *table) {
-    for (int i = 0; i < table->maxOccupiedRow; i++) {
+    for (int i = 0; i < MAX_ROWS_CS; i++) {
         struct CharacterStatsRecord *row = &table->rows[i];
         if (row->set == 1) {
             printf("[CharacterStatsRow] Name=%s, Health=%lu, Mana=%lu Strength=%llu, Dexterity=%llu, Intelligence=%llu, Wisdom=%llu, Charisma=%llu\n",

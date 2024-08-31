@@ -24,6 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <sys/stat.h>
 
 #include "src/coredb/db.h"
+#include "src/models/character.h"
 
 const char *title = ""
 "_______  _______  _______  _             \n"
@@ -86,19 +87,35 @@ error:
     exit(1);
 }
 
+void cleanup()
+{
+    if (game_db != NULL) {
+        Database_destroy(game_db);
+    }
+    return;
+}
+
 int main()
 {
     setup();
     check(game_db != NULL, "Database not initialized");
 
+    struct Character *player = Character_load(game_db, "Mork");
+    check(player != NULL, "Could not load player character");
+
+    printf("Welcome, %s\n", player->name);
+    printf("You are standing in a room. There is a door to the north.\n");
+
+    // Main game loop
+    // TODO: Implement game loop
+
+    // Cleanup
+    cleanup();
+
     // Note: Game database should be prepopulated with all assets for the game.
     // Tools for this are not yet implemented, but every table has working write methods.
-    // Current goal is to turn everything in src into a Mork engine library for doing Zorklikes
-    // and the database is the heart of that.
 
 error:
-    if (game_db != NULL) {
-        Database_destroy(game_db);
-    }
+    cleanup();
     return 0;
 }

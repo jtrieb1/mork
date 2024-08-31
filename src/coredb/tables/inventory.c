@@ -1,3 +1,21 @@
+/*
+Mork: A Zorklike text adventure game influenced by classic late 70s television.
+Copyright (C) 2024 Jacob Triebwasser
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include "inventory.h"
 
 #include <lcthw/dbg.h>
@@ -25,7 +43,7 @@ void InventoryRecord_destroy(struct InventoryRecord* record)
     free(record);
 }
 
-void InventoryRecord_add_item(struct InventoryRecord* record, unsigned short item_id)
+void InventoryRecord_addItem(struct InventoryRecord* record, unsigned short item_id)
 {
     for (int i = 0; i < MAX_INVENTORY_ITEMS; i++) {
         if (record->item_ids[i] == 0) {
@@ -35,7 +53,7 @@ void InventoryRecord_add_item(struct InventoryRecord* record, unsigned short ite
     }
 }
 
-void InventoryRecord_remove_item(struct InventoryRecord* record, unsigned short item_id)
+void InventoryRecord_removeItem(struct InventoryRecord* record, unsigned short item_id)
 {
     for (int i = 0; i < MAX_INVENTORY_ITEMS; i++) {
         if (record->item_ids[i] == item_id) {
@@ -45,7 +63,7 @@ void InventoryRecord_remove_item(struct InventoryRecord* record, unsigned short 
     }
 }
 
-unsigned short InventoryRecord_get_item_count(struct InventoryRecord* record)
+unsigned short InventoryRecord_getItemCount(struct InventoryRecord* record)
 {
     unsigned short count = 0;
     for (int i = 0; i < MAX_INVENTORY_ITEMS; i++) {
@@ -56,17 +74,17 @@ unsigned short InventoryRecord_get_item_count(struct InventoryRecord* record)
     return count;
 }
 
-unsigned short InventoryRecord_get_item(struct InventoryRecord* record, unsigned short index)
+unsigned short InventoryRecord_getItem(struct InventoryRecord* record, unsigned short index)
 {
     return record->item_ids[index];
 }
 
-unsigned short InventoryRecord_get_id(struct InventoryRecord* record)
+unsigned short InventoryRecord_getID(struct InventoryRecord* record)
 {
     return record->id;
 }
 
-unsigned short InventoryRecord_get_owner_id(struct InventoryRecord* record)
+unsigned short InventoryRecord_getOwnerID(struct InventoryRecord* record)
 {
     return record->owner_id;
 }
@@ -106,13 +124,35 @@ void InventoryTable_destroy(struct InventoryTable* table)
     free(table);
 }
 
-unsigned short InventoryTable_add(struct InventoryTable *table, unsigned short owner_id)
+static unsigned short findNextRowToFill(struct InventoryTable *table)
+{
+    unsigned short idx = 0;
+    for (int i = 0; i < MAX_ROWS_INVENTORIES; i++) {
+        if (table->rows[i].id == 0) {
+            idx = i;
+            break;
+        }
+    }
+    if (idx == 0) {
+        // No empty rows, so find oldest and overwrite
+        int min_id = 65535;
+        for (int i = 0; i < MAX_ROWS_INVENTORIES; i++) {
+            if (table->rows[i].id < min_id) {
+                min_id = table->rows[i].id;
+                idx = i;
+            }
+        }
+    }
+    return idx;
+}
+
+unsigned short InventoryTable_add(struct InventoryTable *table, unsigned short owner_id, int junction_id)
 {
     unsigned short id = 0;
     for (int i = 0; i < MAX_ROWS_INVENTORIES; i++) {
         if (table->rows[i].id == 0) {
-            id = table->nextEmptyRow++;
-            table->rows[i].id = id;
+            id = findNextRowToFill(table);
+            table->rows[i].id = junction_id;
             table->rows[i].owner_id = owner_id;
             break;
         }
@@ -120,11 +160,21 @@ unsigned short InventoryTable_add(struct InventoryTable *table, unsigned short o
     return id;
 }
 
+unsigned short InventoryTable_update(struct InventoryTable *table, struct InventoryRecord *record, int id)
+{
+    for (int i = 0; i < MAX_ROWS_INVENTORIES; i++) {
+        if (table->rows[i].id == id) {
+            table->rows[i] = *record;
+            return id;
+        }
+    }
+    return 0;
+}
+
 void InventoryTable_remove(struct InventoryTable *table, unsigned short id)
 {
     for (int i = 0; i < MAX_ROWS_INVENTORIES; i++) {
         if (table->rows[i].id == id) {
-            InventoryRecord_destroy(&table->rows[i]);
             table->rows[i].id = 0;
             table->rows[i].owner_id = 0;
             for (int j = 0; j < MAX_INVENTORY_ITEMS; j++) {
@@ -145,7 +195,7 @@ struct InventoryRecord* InventoryTable_get(struct InventoryTable *table, unsigne
     return NULL;
 }
 
-struct InventoryRecord* InventoryTable_get_by_owner(struct InventoryTable* table, unsigned short owner_id)
+struct InventoryRecord* InventoryTable_getByOwner(struct InventoryTable* table, unsigned short owner_id)
 {
     for (int i = 0; i < MAX_ROWS_INVENTORIES; i++) {
         if (table->rows[i].owner_id == owner_id) {
@@ -153,10 +203,4 @@ struct InventoryRecord* InventoryTable_get_by_owner(struct InventoryTable* table
         }
     }
     return NULL;
-}
-
-unsigned short InventoryTable_set(struct InventoryTable *table, struct InventoryRecord *record)
-{
-    table->rows[record->id] = *record;
-    return record->id;
 }

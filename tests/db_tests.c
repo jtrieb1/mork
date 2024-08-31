@@ -1,10 +1,11 @@
 #include "minunit.h"
+#include "test_settings.h"
+
 #include "../src/coredb/db.h"
 
 #include <stdio.h>
 
 struct Database *db = NULL;
-const char *test_db = "tests/db_tests.db";
 
 char *test_create_db_file()
 {

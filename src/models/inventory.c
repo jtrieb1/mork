@@ -17,6 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "inventory.h"
+#include "item.h"
 
 #include <stdlib.h>
 #include <lcthw/dbg.h>
@@ -66,7 +67,8 @@ int Inventory_addItem(struct Inventory *inventory, struct Item *item)
 int Inventory_removeItem(struct Inventory *inventory, struct Item *item)
 {
     for (int i = 0; i < MAX_INVENTORY_ITEMS; i++) {
-        if (inventory->items[i] == item) {
+        if (strncmp(inventory->items[i]->name, item->name, MAX_NAME - 1) == 0) {
+            Item_destroy(inventory->items[i]);
             inventory->items[i] = NULL;
             return 0;
         }
@@ -149,23 +151,45 @@ void Inventory_print(struct Inventory *inventory)
     }
 }
 
-int Inventory_save(struct Database *db, char *owner_name, struct Inventory *inventory)
+int Inventory_save(struct Database *db, int owner_id, struct Inventory *inventory)
 {
-    struct InventoryRecord *record = Database_get_inventory_by_owner(db, owner_name);
+    struct InventoryRecord *record = NULL;
+    struct CharacterStatsRecord *owner = Database_getCharacterStats(db, owner_id);
+
+    if (owner != NULL) {
+        record = Database_getInventoryByOwner(db, owner->name);
+        if (record == NULL) {
+            int id = Database_createInventory(db, owner->name);
+            check(id != -1, "Failed to create inventory record");
+            record = Database_getInventory(db, id);
+        }
+    } else {
+        // Owner is probably being created, so just write anyway
+        record = malloc(sizeof(struct InventoryRecord));
+        check_mem(record);
+        record->owner_id = owner_id;
+    }
 
     for (int i = 0; i < MAX_INVENTORY_ITEMS; i++) {
         if (inventory->items[i] != NULL) {
-            Item_save(db, inventory->items[i]);
+            record->item_ids[i] = Item_save(db, inventory->items[i]);
+        } else {
+            record->item_ids[i] = 0;
         }
     }
-    int idx = Database_set_inventory(db, record);
-    free(record);
-    return idx;
+
+    return Database_updateInventory(db, record, record->id);;
+
+error:
+    return -1;
 }
 
-struct Inventory *Inventory_load(struct Database *db, int id)
+struct Inventory *Inventory_load(struct Database *db, int owner_id)
 {
-    struct InventoryRecord *record = Database_get_inventory(db, id);
+    struct CharacterStatsRecord *owner = Database_getCharacterStats(db, owner_id);
+    struct InventoryRecord *record = Database_getInventoryByOwner(db, owner->name);
+    check(record != NULL, "Inventory record does not exist in database");
+
     struct Inventory *inventory = Inventory_create();
 
     for (int i = 0; i < MAX_INVENTORY_ITEMS; i++) {
@@ -174,6 +198,8 @@ struct Inventory *Inventory_load(struct Database *db, int id)
         }
     }
 
-    free(record);
     return inventory;
+
+error:
+    return NULL;
 }

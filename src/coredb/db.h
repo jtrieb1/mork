@@ -47,7 +47,7 @@ void Database_open(struct Database *db, const char *path);
 void Database_close(struct Database *db);
 void Database_flush(struct Database *db);
 void Database_destroy(struct Database *db);
-void Database_print_all(struct Database *db);
+void Database_printAll(struct Database *db);
 
 // Table-level ops
 void *Database_get(struct Database *db, enum Table table);
@@ -56,25 +56,38 @@ void Database_write(struct Database *db, enum Table table);
 void Database_delete(struct Database *db, enum Table table, int id);
 void Database_print(struct Database *db, enum Table table);
 
+unsigned int Database_getTableIndexCounter(struct Database *db, enum Table table);
+
 // Record-level ops (setters return index of record in table)
-struct CharacterStatsRecord *Database_get_character_stats(struct Database *db, int id);
-struct CharacterStatsRecord *Database_get_character_stats_by_name(struct Database *db, char *name);
-int Database_set_character_stats(struct Database *db, struct CharacterStatsRecord *stats);
+struct CharacterStatsRecord *Database_getCharacterStats(struct Database *db, int id);
+struct CharacterStatsRecord *Database_getCharacterStatsByName(struct Database *db, char *name);
+int Database_createCharacterStats(struct Database *db, struct CharacterStatsRecord *stats);
+int Database_updateCharacterStats(struct Database *db, struct CharacterStatsRecord *stats, int id);
+void Database_deleteCharacterStats(struct Database *db, int id);
 
-struct DescriptionRecord *Database_get_description(struct Database *db, int id);
-struct DescriptionRecord *Database_get_description_by_prefix(struct Database *db, char *prefix);
-int Database_set_description(struct Database *db, struct DescriptionRecord *description);
+struct DescriptionRecord *Database_getDescription(struct Database *db, int id);
+struct DescriptionRecord *Database_getDescriptionByPrefix(struct Database *db, char *prefix);
+struct DescriptionRecord *Database_getOrCreateDescription(struct Database *db, char *prefix);
+int Database_createDescription(struct Database *db, struct DescriptionRecord *description);
+int Database_updateDescription(struct Database *db, struct DescriptionRecord *description, int id);
+void Database_deleteDescription(struct Database *db, int id);
 
-struct DialogRecord *Database_get_dialog(struct Database *db, int id);
-int Database_set_dialog(struct Database *db, struct DialogRecord *dialog);
+struct DialogRecord *Database_getDialog(struct Database *db, int id);
+int Database_createDialog(struct Database *db, struct DialogRecord *dialog);
+int Database_updateDialog(struct Database *db, struct DialogRecord *dialog, int id);
+void Database_deleteDialog(struct Database *db, int id);
 
-struct ItemRecord *Database_get_item(struct Database *db, int id);
-struct ItemRecord *Database_get_item_by_name(struct Database *db, char *name);
-int Database_set_item(struct Database *db, struct ItemRecord *item);
+struct ItemRecord *Database_getItem(struct Database *db, int id);
+struct ItemRecord *Database_getItemByName(struct Database *db, char *name);
+struct ItemRecord *Database_getOrCreateItem(struct Database *db, char *name);
+int Database_createItem(struct Database *db, struct ItemRecord *item);
+int Database_updateItem(struct Database *db, struct ItemRecord *item, int id);
+void Database_deleteItem(struct Database *db, int id);
 
-struct InventoryRecord *Database_get_inventory(struct Database *db, int id);
-struct InventoryRecord *Database_get_inventory_by_owner(struct Database *db, char *owner);
-int Database_create_inventory(struct Database *db, char *owner);
-int Database_set_inventory(struct Database *db, struct InventoryRecord *record);
+struct InventoryRecord *Database_getInventory(struct Database *db, int id);
+struct InventoryRecord *Database_getInventoryByOwner(struct Database *db, char *owner);
+int Database_createInventory(struct Database *db, char *owner);
+int Database_updateInventory(struct Database *db, struct InventoryRecord *record, int id);
+void Database_deleteInventory(struct Database *db, int id);
 
-struct ItemRecord **Database_get_items_in_inventory(struct Database *db, char *owner);
+struct ItemRecord **Database_getItemsInInventory(struct Database *db, char *owner);

@@ -164,6 +164,10 @@ struct Database *Database_create()
     check_mem(db);
 
     db->file = NULL;
+    db->initialized = 0;
+    for (enum Table tbl = 0; tbl < MAX_TABLES; ++tbl) {
+        db->table_index_counters[tbl] = 1;
+    }
 
     for (int i = 0; i < MAX_TABLES; i++) {
         db->tables[i] = NULL;
@@ -250,7 +254,17 @@ error:
     return;
 }
 
-struct CharacterStatsRecord *Database_get_character_stats(struct Database *db, int id)
+unsigned int Database_getNextID(struct Database *db, enum Table table)
+{
+    check(db != NULL, "Database is NULL");
+    check(table >= 0 && table < MAX_TABLES, "Invalid table: %d", table);
+    return db->table_index_counters[table]++;
+
+error:
+    return 0;
+}
+
+struct CharacterStatsRecord *Database_getCharacterStats(struct Database *db, int id)
 {
     check(db != NULL, "Database is NULL");
 
@@ -263,36 +277,50 @@ error:
     return NULL;
 }
 
-struct CharacterStatsRecord *Database_get_character_stats_by_name(struct Database *db, char *name)
+struct CharacterStatsRecord *Database_getCharacterStatsByName(struct Database *db, char *name)
 {
     check(db != NULL, "Database is NULL");
 
     struct CharacterStatsTable *table = db->tables[CHARACTER_STATS];
     check(table != NULL, "Character stats table is NULL");
 
-    return CharacterStatsTable_get_by_name(table, name);
+    return CharacterStatsTable_getByName(table, name);
 
 error:
     return NULL;
 }
 
-int Database_set_character_stats(struct Database *db, struct CharacterStatsRecord *stats)
+int Database_createCharacterStats(struct Database *db, struct CharacterStatsRecord *stats)
 {
-    // This method takes ownership of the stats record, so it must be freed here
     check(db != NULL, "Expected a non-null database.");
 
     struct CharacterStatsTable *table = db->tables[CHARACTER_STATS];
     check(table != NULL, "Character stats table is not initialized.");
 
-    unsigned char idx = CharacterStatsTable_set(table, stats);
-    CharacterStatsRecord_destroy(stats);
+    stats->id = Database_getNextID(db, CHARACTER_STATS);
+    unsigned char idx = CharacterStatsTable_newRow(table, stats);
     return (int)idx;
 
 error:
     return -1;
 }
 
-struct DialogRecord *Database_get_dialog(struct Database *db, int id)
+int Database_updateCharacterStats(struct Database *db, struct CharacterStatsRecord *stats, int id)
+{
+    check(db != NULL, "Expected a non-null database.");
+
+    struct CharacterStatsTable *table = db->tables[CHARACTER_STATS];
+    check(table != NULL, "Character stats table is not initialized.");
+
+    unsigned char idx = CharacterStatsTable_update(table, stats, id);
+
+    return (int)idx;
+
+error:
+    return -1;
+}
+
+struct DialogRecord *Database_getDialog(struct Database *db, int id)
 {
     check(db != NULL, "Expected a non-null database.");
 
@@ -305,7 +333,7 @@ error:
     return NULL;
 }
 
-int Database_set_dialog(struct Database *db, struct DialogRecord *dialog)
+int Database_setDialog(struct Database *db, struct DialogRecord *dialog)
 {
     // This method takes ownership of the dialog record, so it must be freed here
     check(db != NULL, "Expected a non-null database.")
@@ -321,7 +349,7 @@ error:
     return -1;
 }
 
-struct ItemRecord *Database_get_item(struct Database *db, int id)
+struct ItemRecord *Database_getItem(struct Database *db, int id)
 {
     check(db != NULL, "Expected a non-null database.");
 
@@ -334,36 +362,61 @@ error:
     return NULL;
 }
 
-struct ItemRecord *Database_get_item_by_name(struct Database *db, char *name)
+struct ItemRecord *Database_getItemByName(struct Database *db, char *name)
 {
     check(db != NULL, "Expected a non-null database.");
 
     struct ItemTable *table = db->tables[ITEMS];
     check(table != NULL, "Item table is not initialized.");
 
-    return ItemTable_get_by_name(table, name);
+    return ItemTable_getByName(table, name);
 
 error:
     return NULL;
 }
 
-int Database_set_item(struct Database *db, struct ItemRecord *item)
+struct ItemRecord *Database_getOrCreateItem(struct Database *db, char *name)
 {
-    // This method takes ownership of the item record, so it must be freed here
+    struct ItemRecord *item = Database_getItemByName(db, name);
+    if (item == NULL) {
+        int id = Database_getNextID(db, ITEMS);
+        item = ItemRecord_create(id, name, 0);
+        Database_createItem(db, item);
+    }
+    return item;
+}
+
+int Database_createItem(struct Database *db, struct ItemRecord *item)
+{
     check(db != NULL, "Expected a non-null database.");
 
     struct ItemTable *table = db->tables[ITEMS];
     check(table != NULL, "Item table is not initialized.");
 
-    unsigned short idx = ItemTable_set(table, item);
-    ItemRecord_destroy(item);
+    item->id = Database_getNextID(db, ITEMS);
+    unsigned short idx = ItemTable_newRow(table, item);
     return (int)idx;
 
 error:
     return -1;
 }
 
-struct DescriptionRecord *Database_get_description(struct Database *db, int id)
+int Database_updateItem(struct Database *db, struct ItemRecord *item, int id)
+{
+    check(db != NULL, "Expected a non-null database.");
+
+    struct ItemTable *table = db->tables[ITEMS];
+    check(table != NULL, "Item table is not initialized.");
+
+    item->id = id;
+    ItemTable_update(table, item);
+    return id;
+
+error:
+    return -1;
+}
+
+struct DescriptionRecord *Database_getDescription(struct Database *db, int id)
 {
     check(db != NULL, "Expected a non-null database.");
 
@@ -376,7 +429,7 @@ error:
     return NULL;
 }
 
-struct DescriptionRecord *Database_get_description_by_prefix(struct Database *db, char *prefix)
+struct DescriptionRecord *Database_getDescriptionByPrefix(struct Database *db, char *prefix)
 {
     check(db != NULL, "Expected a non-null database.");
 
@@ -389,23 +442,43 @@ error:
     return NULL;
 }
 
-int Database_set_description(struct Database *db, struct DescriptionRecord *desc)
+struct DescriptionRecord *Database_getOrCreateDescription(struct Database *db, char *prefix)
 {
-    // This method takes ownership of the description record, so it must be freed here
     check(db != NULL, "Expected a non-null database.");
 
     struct DescriptionTable *table = db->tables[DESCRIPTION];
     check(table != NULL, "Description table is not initialized.");
 
-    unsigned short idx = DescriptionTable_set(table, desc);
-    DescriptionRecord_destroy(desc);
+    struct DescriptionRecord *desc = DescriptionTable_get_by_prefix(table, prefix);
+    if (desc == NULL) {
+        desc = DescriptionRecord_create(Database_getNextID(db, DESCRIPTION), prefix, 0);
+        unsigned short idx = DescriptionTable_insert(table, desc);
+        desc->id = idx;
+    }
+
+    return desc;
+
+error:
+    return NULL;
+}
+
+int Database_setDescription(struct Database *db, struct DescriptionRecord *desc)
+{
+    check(db != NULL, "Expected a non-null database.");
+
+    struct DescriptionTable *table = db->tables[DESCRIPTION];
+    check(table != NULL, "Description table is not initialized.");
+
+    unsigned short id = desc->id != 0 ? desc->id : Database_getNextID(db, DESCRIPTION);
+
+    unsigned short idx = DescriptionTable_update(table, desc, id);
     return (int)idx;
 
 error:
     return -1;
 }
 
-struct InventoryRecord *Database_get_inventory(struct Database *db, int id)
+struct InventoryRecord *Database_getInventory(struct Database *db, int id)
 {
     check(db != NULL, "Expected a non-null database.");
 
@@ -418,67 +491,68 @@ error:
     return NULL;
 }
 
-struct InventoryRecord *Database_get_inventory_by_owner(struct Database *db, char *owner)
+struct InventoryRecord *Database_getInventoryByOwner(struct Database *db, char *owner)
 {
     check(db != NULL, "Expected a non-null database.");
 
     struct InventoryTable *table = db->tables[INVENTORY];
     check(table != NULL, "Inventory table is not initialized.");
 
-    struct CharacterStatsRecord *owner_record = Database_get_character_stats_by_name(db, owner);
+    struct CharacterStatsRecord *owner_record = Database_getCharacterStatsByName(db, owner);
+    check(owner_record != NULL, "Character stats record not found.");
 
-    return InventoryTable_get_by_owner(table, owner_record->id);
+    return InventoryTable_getByOwner(table, owner_record->id);
 
 error:
     return NULL;
 }
 
-int Database_create_inventory(struct Database *db, char *owner)
+int Database_createInventory(struct Database *db, char *owner)
 {
     check(db != NULL, "Expected a non-null database.");
 
     struct InventoryTable *table = db->tables[INVENTORY];
     check(table != NULL, "Inventory table is not initialized.");
 
-    struct CharacterStatsRecord *owner_record = Database_get_character_stats_by_name(db, owner);
+    struct CharacterStatsRecord *owner_record = Database_getCharacterStatsByName(db, owner);
     check(owner_record != NULL, "Character stats record not found.");
 
-    unsigned short idx = InventoryTable_add(table, owner_record->id);
+    unsigned short idx = InventoryTable_add(table, owner_record->id, Database_getNextID(db, INVENTORY));
     return (int)idx;
 
 error:
     return -1;
 }
 
-int Database_set_inventory(struct Database *db, struct InventoryRecord *record)
+int Database_updateInventory(struct Database *db, struct InventoryRecord *record, int id)
 {
-    // This method takes ownership of the inventory record, so it must be freed here
     check(db != NULL, "Expected a non-null database.");
 
     struct InventoryTable *table = db->tables[INVENTORY];
     check(table != NULL, "Inventory table is not initialized.");
 
-    unsigned short idx = InventoryTable_set(table, record);
-    InventoryRecord_destroy(record);
-    return (int)idx;
+    record->id = id;
+    InventoryTable_update(table, record, id);
+    return id;
 
 error:
     return -1;
 }
 
-struct ItemRecord **Database_get_items_in_inventory(struct Database *db, char *owner)
+
+struct ItemRecord **Database_getItemsInInventory(struct Database *db, char *owner)
 {
     check(db != NULL, "Expected a non-null database.");
 
-    struct InventoryRecord *inventory = Database_get_inventory_by_owner(db, owner);
+    struct InventoryRecord *inventory = Database_getInventoryByOwner(db, owner);
     check(inventory != NULL, "Inventory record not found.");
 
-    struct ItemRecord **items = calloc(InventoryRecord_get_item_count(inventory), sizeof(struct ItemRecord *));
+    struct ItemRecord **items = calloc(InventoryRecord_getItemCount(inventory), sizeof(struct ItemRecord *));
     check_mem(items);
 
-    for (int i = 0; i < InventoryRecord_get_item_count(inventory); i++)
+    for (int i = 0; i < InventoryRecord_getItemCount(inventory); i++)
     {
-        items[i] = Database_get_item(db, inventory->item_ids[i]);
+        items[i] = Database_getItem(db, inventory->item_ids[i]);
     }
 
     return items;

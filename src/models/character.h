@@ -43,4 +43,4 @@ struct Character *Character_create(const char *name, unsigned short strength, un
 void Character_destroy(struct Character *character);
 
 void Character_save(struct Database *db, struct Character *character);
-struct Character *Character_load(struct Database *db, const char *name);
+struct Character *Character_load(struct Database *db, char *name);

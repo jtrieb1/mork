@@ -75,56 +75,50 @@ void ItemTable_destroy(struct ItemTable *table)
     free(table);
 }
 
-unsigned short ItemTable_set(struct ItemTable *table, struct ItemRecord *record)
+static unsigned short findNextRowToFill(struct ItemTable *table)
 {
-    // Check for matching record
-    for (unsigned short i = 0; i < table->maxOccupiedRow; i++) {
-        if (table->rows[i].id == record->id) {
-            // If matching record, update row
-            table->rows[i] = *record;
-            return i;
+    unsigned short idx = 0;
+    for (int i = 0; i < MAX_ROWS_ITEMS; i++) {
+        if (table->rows[i].id == 0) {
+            idx = i;
+            break;
         }
     }
-
-    // If no existing row with matching id, add new row
-    if (table->maxOccupiedRow < MAX_ROWS_ITEMS - 1) {
-        // Table is not full here
-        // Find where the row needs to go
-        // Is nextEmptyRow empty?
-        if (table->rows[table->nextEmptyRow].set == 0) {
-            table->rows[table->nextEmptyRow] = *record;
-            table->maxOccupiedRow = table->nextEmptyRow;
-            table->nextEmptyRow++;
-            return table->maxOccupiedRow;
-        } else {
-            // Find the next empty row
-            for (unsigned short i = 0; i < MAX_ROWS_ITEMS - 1; i++) {
-                if (table->rows[i].set == 0) {
-                    table->rows[i] = *record;
-                    table->maxOccupiedRow = i;
-                    table->nextEmptyRow = i + 1;
-                    return table->maxOccupiedRow;
-                }
+    if (idx == 0) {
+        // No empty rows, so find oldest and overwrite
+        int min_id = 65535;
+        for (int i = 0; i < MAX_ROWS_ITEMS; i++) {
+            if (table->rows[i].id < min_id) {
+                min_id = table->rows[i].id;
+                idx = i;
             }
         }
     }
-
-    // Table is full
-    unsigned char oldestRow = 0;
-    // The oldest row is the row with the lowest id
-    for (unsigned short i = 0; i < MAX_ROWS_ITEMS - 1; i++) {
-        if (table->rows[i].id < table->rows[oldestRow].id) {
-            oldestRow = i;
-        }
-    }
-    table->rows[oldestRow] = *record;
-    return oldestRow;
+    return idx;
 }
 
+unsigned short ItemTable_newRow(struct ItemTable *it, struct ItemRecord *record)
+{
+    unsigned short idx = findNextRowToFill(it);
+    it->rows[idx] = *record;
+    return record->id;
+}
+
+unsigned short ItemTable_update(struct ItemTable *it, struct ItemRecord *record)
+{
+    for (unsigned short i = 0; i < MAX_ROWS_ITEMS; i++) {
+        if (it->rows[i].id == record->id) {
+            it->rows[i] = *record;
+            return it->rows[i].id;
+        }
+    }
+
+    return ItemTable_newRow(it, record);
+}
 
 struct ItemRecord *ItemTable_get(struct ItemTable *table, unsigned short id)
 {
-    for (unsigned short i = 0; i < table->maxOccupiedRow; i++) {
+    for (unsigned short i = 0; i < MAX_ROWS_ITEMS; i++) {
         if (table->rows[i].id == id) {
             return &table->rows[i];
         }
@@ -133,9 +127,9 @@ struct ItemRecord *ItemTable_get(struct ItemTable *table, unsigned short id)
     return NULL;
 }
 
-struct ItemRecord *ItemTable_get_by_name(struct ItemTable *table, char *name)
+struct ItemRecord *ItemTable_getByName(struct ItemTable *table, char *name)
 {
-    for (int i = 0; i < table->maxOccupiedRow; i++) {
+    for (int i = 0; i < MAX_ROWS_ITEMS; i++) {
         if (strncmp(table->rows[i].name, name, MAX_NAME) == 0) {
             return &table->rows[i];
         }
@@ -146,7 +140,7 @@ struct ItemRecord *ItemTable_get_by_name(struct ItemTable *table, char *name)
 
 void ItemTable_list(struct ItemTable *table)
 {
-    for (int i = 0; i < table->maxOccupiedRow; i++) {
+    for (int i = 0; i < MAX_ROWS_ITEMS; i++) {
         if (table->rows[i].set == 1) {
             log_info("ID: %d, Name: %s, Description ID: %d", table->rows[i].id, table->rows[i].name, table->rows[i].description_id);
         }
@@ -155,7 +149,7 @@ void ItemTable_list(struct ItemTable *table)
 
 void ItemTable_delete(struct ItemTable *table, unsigned short id)
 {
-    for (int i = 0; i < table->maxOccupiedRow; i++) {
+    for (int i = 0; i < MAX_ROWS_ITEMS; i++) {
         if (table->rows[i].id == id) {
             table->rows[i].set = 0;
             return;

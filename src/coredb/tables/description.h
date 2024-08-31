@@ -32,14 +32,13 @@ struct DescriptionRecord *DescriptionRecord_create(unsigned short id, char *desc
 void DescriptionRecord_destroy(struct DescriptionRecord *entry);
 
 struct DescriptionTable {
-    unsigned short nextEmptyRow;
-    unsigned short maxOccupiedRow;
     struct DescriptionRecord rows[MAX_ROWS_DESC];
 };
 
 struct DescriptionTable *DescriptionTable_create();
 void DescriptionTable_init(struct DescriptionTable *table);
-unsigned short DescriptionTable_set(struct DescriptionTable *table, struct DescriptionRecord *entry);
+unsigned short DescriptionTable_insert(struct DescriptionTable *table, struct DescriptionRecord *entry);
+unsigned short DescriptionTable_update(struct DescriptionTable *table, struct DescriptionRecord *entry, unsigned short id);
 struct DescriptionRecord *DescriptionTable_get(struct DescriptionTable *table, unsigned short id);
 struct DescriptionRecord *DescriptionTable_get_next(struct DescriptionTable *table, unsigned short id); // For easy continuation of text
 struct DescriptionRecord *DescriptionTable_get_by_prefix(struct DescriptionTable *table, char *prefix);

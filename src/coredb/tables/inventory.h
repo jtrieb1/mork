@@ -49,3 +49,4 @@ unsigned short InventoryTable_add(struct InventoryTable* table, unsigned short o
 void InventoryTable_remove(struct InventoryTable* table, unsigned short id);
 struct InventoryRecord* InventoryTable_get(struct InventoryTable* table, unsigned short id);
 struct InventoryRecord* InventoryTable_get_by_owner(struct InventoryTable* table, unsigned short owner_id);
+unsigned short InventoryTable_set(struct InventoryTable *table, struct InventoryRecord *record);

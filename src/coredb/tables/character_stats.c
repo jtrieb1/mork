@@ -42,7 +42,6 @@ void CharacterStatsRecord_init(struct CharacterStatsRecord *record) {
 }
 
 struct CharacterStatsRecord *CharacterStatsRecord_create(
-    int id, int set,
     const char *name,
     unsigned int level,
     unsigned int experience,
@@ -60,8 +59,8 @@ struct CharacterStatsRecord *CharacterStatsRecord_create(
     struct CharacterStatsRecord *record = (struct CharacterStatsRecord *)malloc(sizeof(struct CharacterStatsRecord));
     check_mem(record);
     CharacterStatsRecord_init(record);
-    record->id = id;
-    record->set = set;
+    record->id = 0;
+    record->set = 0;
     strncpy(record->name, name, MAX_NAME_LEN - 1);
     record->level = level;
     record->experience = experience;
@@ -122,51 +121,67 @@ void CharacterStatsTable_init(struct CharacterStatsTable *table) {
     }
 }
 
-void CharacterStatsTable_set(
+unsigned char CharacterStatsTable_set(
     struct CharacterStatsTable *table,
     struct CharacterStatsRecord *new_row
 ) {
     // Check for existing row with matching id
-    for (int i = 0; i < table->maxOccupiedRow; i++) {
+    for (unsigned char i = 0; i < table->maxOccupiedRow; i++) {
         if (table->rows[i].id == new_row->id) {
             table->rows[i] = *new_row;
-            return;
+            return i;
         }
     }
 
     // If no existing row with matching id, add new row
     if (table->maxOccupiedRow < MAX_ROWS_CS - 1) {
-        // If table is not full, add new row to end
-        table->rows[table->maxOccupiedRow] = *new_row;
-        // Update maxOccupiedRow and nextEmptyRow
-        if (table->maxOccupiedRow == 0 && table->nextEmptyRow == 0) { // If table is empty
-            table->nextEmptyRow = 1;
+        // Table is not full here
+        // Find where the row needs to go
+        // Is nextEmptyRow empty?
+        if (table->rows[table->nextEmptyRow].set == 0) {
+            table->rows[table->nextEmptyRow] = *new_row;
+            table->maxOccupiedRow = table->nextEmptyRow;
+            table->nextEmptyRow++;
+            return table->maxOccupiedRow;
         } else {
-            table->maxOccupiedRow++;
-            table->nextEmptyRow = table->maxOccupiedRow + 1;
-        }
-    } else {
-        // If table is full, write to next empty row and update nextEmptyRow
-        // nextEmptyRow is either the oldest row or a row that was deleted
-        table->rows[table->nextEmptyRow] = *new_row;
-        // Check if next row is empty
-        table->nextEmptyRow++; // We allow overflow here since the type is unsigned
-        if (table->rows[table->nextEmptyRow].set == 1) {
-            // If next row is not empty, find the next empty row
-            for (int i = 0; i < MAX_ROWS_CS; i++) {
+            // Find the next empty row
+            for (unsigned char i = 0; i < MAX_ROWS_CS - 1; i++) {
                 if (table->rows[i].set == 0) {
-                    table->nextEmptyRow = i;
-                    break;
+                    table->rows[i] = *new_row;
+                    table->maxOccupiedRow = i;
+                    table->nextEmptyRow = i + 1;
+                    return table->maxOccupiedRow;
                 }
             }
+            // No empty row found
+            return -1; // This is a really unexpected scenario, so panic
         }
+    } else {
+        // Table is full
+        unsigned char oldestRow = 0;
+        // The oldest row is the row with the lowest id
+        for (unsigned char i = 0; i < MAX_ROWS_CS - 1; i++) {
+            if (table->rows[i].id < table->rows[oldestRow].id) {
+                oldestRow = i;
+            }
+        }
+        table->rows[oldestRow] = *new_row;
+        return oldestRow;
     }
-
 }
 
 struct CharacterStatsRecord *CharacterStatsTable_get(struct CharacterStatsTable *table, int id) {
     for (int i = 0; i < table->maxOccupiedRow; i++) {
         if (table->rows[i].id == id) {
+            return &table->rows[i];
+        }
+    }
+    return NULL;
+}
+
+struct CharacterStatsRecord *CharacterStatsTable_get_by_name(struct CharacterStatsTable *table, char *name) {
+    for (int i = 0; i < table->maxOccupiedRow; i++) {
+        if (strcmp(table->rows[i].name, name) == 0) {
             return &table->rows[i];
         }
     }

@@ -41,7 +41,7 @@ struct DialogTable {
 struct DialogTable *DialogTable_create();
 void DialogTable_init(struct DialogTable *table);
 void DialogTable_destroy(struct DialogTable *table);
-void DialogTable_set(struct DialogTable *table, struct DialogRecord *record);
+unsigned short DialogTable_set(struct DialogTable *table, struct DialogRecord *record);
 struct DialogRecord *DialogTable_get(struct DialogTable *table, unsigned short id);
 void DialogTable_delete(struct DialogTable *table, unsigned short id);
 void DialogTable_print(struct DialogTable *table);

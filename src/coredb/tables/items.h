@@ -41,6 +41,7 @@ struct ItemTable *ItemTable_create();
 void ItemTable_init(struct ItemTable *it);
 void ItemTable_destroy(struct ItemTable *it);
 struct ItemRecord *ItemTable_get(struct ItemTable *it, unsigned short index);
-void ItemTable_set(struct ItemTable *it, struct ItemRecord *record);
+struct ItemRecord *ItemTable_get_by_name(struct ItemTable *it, char *name);
+unsigned short ItemTable_set(struct ItemTable *it, struct ItemRecord *record);
 void ItemTable_print(struct ItemTable *it);
 void ItemTable_print_row(struct ItemTable *it, int index);

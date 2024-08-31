@@ -154,3 +154,9 @@ struct InventoryRecord* InventoryTable_get_by_owner(struct InventoryTable* table
     }
     return NULL;
 }
+
+unsigned short InventoryTable_set(struct InventoryTable *table, struct InventoryRecord *record)
+{
+    table->rows[record->id] = *record;
+    return record->id;
+}

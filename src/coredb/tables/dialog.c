@@ -74,39 +74,50 @@ void DialogTable_destroy(struct DialogTable *table)
     free(table);
 }
 
-void DialogTable_set(struct DialogTable *table, struct DialogRecord *record)
+unsigned short DialogTable_set(struct DialogTable *table, struct DialogRecord *record)
 {
     // See if we have a matching row
-    for (int i = 0; i < table->maxOccupiedRow; i++) {
+    for (unsigned short i = 0; i < table->maxOccupiedRow; i++) {
         if (table->rows[i].id == record->id) {
             table->rows[i] = *record;
-            return;
+            return i;
         }
     }
 
-    // If we don't have a matching row, add a new one
     // If no existing row with matching id, add new row
-    if (table->maxOccupiedRow <= MAX_ROWS_DIALOG - 1) {
-        // If table is not full, add new row to end
-        table->rows[table->maxOccupiedRow] = *record;
-        // Update maxOccupiedRow and nextEmptyRow
-        table->maxOccupiedRow++;
-        table->nextEmptyRow = table->maxOccupiedRow;
-    } else {
-        // If table is full, write to next empty row and update nextEmptyRow
-        // nextEmptyRow is either the oldest row or a row that was deleted
-        table->rows[table->nextEmptyRow] = *record;
-        // Check if next row is empty
-        table->nextEmptyRow++; // We allow overflow here since the type is unsigned
-        if (table->rows[table->nextEmptyRow].set == 1) {
-            // If next row is not empty, find the next empty row
-            for (int i = 0; i < MAX_ROWS_DIALOG; i++) {
+    if (table->maxOccupiedRow < MAX_ROWS_DIALOG - 1) {
+        // Table is not full here
+        // Find where the row needs to go
+        // Is nextEmptyRow empty?
+        if (table->rows[table->nextEmptyRow].set == 0) {
+            table->rows[table->nextEmptyRow] = *record;
+            table->maxOccupiedRow = table->nextEmptyRow;
+            table->nextEmptyRow++;
+            return table->maxOccupiedRow;
+        } else {
+            // Find the next empty row
+            for (unsigned short i = 0; i < MAX_ROWS_DIALOG - 1; i++) {
                 if (table->rows[i].set == 0) {
-                    table->nextEmptyRow = i;
-                    break;
+                    table->rows[i] = *record;
+                    table->maxOccupiedRow = i;
+                    table->nextEmptyRow = i + 1;
+                    return table->maxOccupiedRow;
                 }
             }
+            // No empty row found
+            return -1; // This is a really unexpected scenario, so panic
         }
+    } else {
+        // Table is full
+        unsigned char oldestRow = 0;
+        // The oldest row is the row with the lowest id
+        for (unsigned short i = 0; i < MAX_ROWS_DIALOG - 1; i++) {
+            if (table->rows[i].id < table->rows[oldestRow].id) {
+                oldestRow = i;
+            }
+        }
+        table->rows[oldestRow] = *record;
+        return oldestRow;
     }
 }
 

@@ -75,46 +75,68 @@ void ItemTable_destroy(struct ItemTable *table)
     free(table);
 }
 
-void ItemTable_set(struct ItemTable *table, struct ItemRecord *record)
+unsigned short ItemTable_set(struct ItemTable *table, struct ItemRecord *record)
 {
     // Check for matching record
-    for (int i = 0; i < table->maxOccupiedRow; i++) {
+    for (unsigned short i = 0; i < table->maxOccupiedRow; i++) {
         if (table->rows[i].id == record->id) {
             // If matching record, update row
             table->rows[i] = *record;
-            return;
+            return i;
         }
     }
 
     // If no existing row with matching id, add new row
-    if (table->maxOccupiedRow <= MAX_ROWS_ITEMS - 1) {
-        // If table is not full, add new row to end
-        table->rows[table->maxOccupiedRow] = *record;
-        // Update maxOccupiedRow and nextEmptyRow
-        table->maxOccupiedRow++;
-        table->nextEmptyRow = table->maxOccupiedRow;
-    } else {
-        // If table is full, write to next empty row and update nextEmptyRow
-        // nextEmptyRow is either the oldest row or a row that was deleted
-        table->rows[table->nextEmptyRow] = *record;
-        // Check if next row is empty
-        table->nextEmptyRow++; // We allow overflow here since the type is unsigned
-        if (table->rows[table->nextEmptyRow].set == 1) {
-            // If next row is not empty, find the next empty row
-            for (int i = 0; i < MAX_ROWS_ITEMS; i++) {
+    if (table->maxOccupiedRow < MAX_ROWS_ITEMS - 1) {
+        // Table is not full here
+        // Find where the row needs to go
+        // Is nextEmptyRow empty?
+        if (table->rows[table->nextEmptyRow].set == 0) {
+            table->rows[table->nextEmptyRow] = *record;
+            table->maxOccupiedRow = table->nextEmptyRow;
+            table->nextEmptyRow++;
+            return table->maxOccupiedRow;
+        } else {
+            // Find the next empty row
+            for (unsigned short i = 0; i < MAX_ROWS_ITEMS - 1; i++) {
                 if (table->rows[i].set == 0) {
-                    table->nextEmptyRow = i;
-                    break;
+                    table->rows[i] = *record;
+                    table->maxOccupiedRow = i;
+                    table->nextEmptyRow = i + 1;
+                    return table->maxOccupiedRow;
                 }
             }
         }
     }
+
+    // Table is full
+    unsigned char oldestRow = 0;
+    // The oldest row is the row with the lowest id
+    for (unsigned short i = 0; i < MAX_ROWS_ITEMS - 1; i++) {
+        if (table->rows[i].id < table->rows[oldestRow].id) {
+            oldestRow = i;
+        }
+    }
+    table->rows[oldestRow] = *record;
+    return oldestRow;
 }
+
 
 struct ItemRecord *ItemTable_get(struct ItemTable *table, unsigned short id)
 {
-    for (int i = 0; i < table->maxOccupiedRow; i++) {
+    for (unsigned short i = 0; i < table->maxOccupiedRow; i++) {
         if (table->rows[i].id == id) {
+            return &table->rows[i];
+        }
+    }
+
+    return NULL;
+}
+
+struct ItemRecord *ItemTable_get_by_name(struct ItemTable *table, char *name)
+{
+    for (int i = 0; i < table->maxOccupiedRow; i++) {
+        if (strncmp(table->rows[i].name, name, MAX_NAME) == 0) {
             return &table->rows[i];
         }
     }

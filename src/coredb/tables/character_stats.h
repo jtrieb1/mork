@@ -87,7 +87,6 @@ enum Stats {
 struct CharacterStatsRecord *CharacterStatsRecord_default();
 void CharacterStatsRecord_init(struct CharacterStatsRecord *rec);
 struct CharacterStatsRecord *CharacterStatsRecord_create(
-    int id, int set,
     const char *name,
     unsigned int level,
     unsigned int experience,
@@ -116,11 +115,13 @@ struct CharacterStatsTable {
 struct CharacterStatsTable *CharacterStatsTable_create();
 
 void CharacterStatsTable_init(struct CharacterStatsTable *table);
-void CharacterStatsTable_set(
+// Returns index of the row
+unsigned char CharacterStatsTable_set(
     struct CharacterStatsTable *table,
     struct CharacterStatsRecord *record
 );
 struct CharacterStatsRecord *CharacterStatsTable_get(struct CharacterStatsTable *table, int id);
+struct CharacterStatsRecord *CharacterStatsTable_get_by_name(struct CharacterStatsTable *table, char *name);
 void CharacterStatsTable_delete(struct CharacterStatsTable *table, int id);
 
 void CharacterStatsTable_destroy(struct CharacterStatsTable *table);

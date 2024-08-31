@@ -39,6 +39,7 @@ struct Database {
     unsigned char initialized;
     FILE *file;
     void *tables[MAX_TABLES];
+    unsigned int table_index_counters[MAX_TABLES];
 };
 
 struct Database *Database_create();
@@ -55,18 +56,25 @@ void Database_write(struct Database *db, enum Table table);
 void Database_delete(struct Database *db, enum Table table, int id);
 void Database_print(struct Database *db, enum Table table);
 
-// Record-level ops
+// Record-level ops (setters return index of record in table)
 struct CharacterStatsRecord *Database_get_character_stats(struct Database *db, int id);
-void Database_set_character_stats(struct Database *db, struct CharacterStatsRecord *stats);
+struct CharacterStatsRecord *Database_get_character_stats_by_name(struct Database *db, char *name);
+int Database_set_character_stats(struct Database *db, struct CharacterStatsRecord *stats);
 
 struct DescriptionRecord *Database_get_description(struct Database *db, int id);
-void Database_set_description(struct Database *db, struct DescriptionRecord *description);
+struct DescriptionRecord *Database_get_description_by_prefix(struct Database *db, char *prefix);
+int Database_set_description(struct Database *db, struct DescriptionRecord *description);
 
 struct DialogRecord *Database_get_dialog(struct Database *db, int id);
-void Database_set_dialog(struct Database *db, struct DialogRecord *dialog);
+int Database_set_dialog(struct Database *db, struct DialogRecord *dialog);
 
 struct ItemRecord *Database_get_item(struct Database *db, int id);
-void Database_set_item(struct Database *db, struct ItemRecord *item);
+struct ItemRecord *Database_get_item_by_name(struct Database *db, char *name);
+int Database_set_item(struct Database *db, struct ItemRecord *item);
 
 struct InventoryRecord *Database_get_inventory(struct Database *db, int id);
-void Database_set_inventory(struct Database *db, struct InventoryRecord *inventory);
+struct InventoryRecord *Database_get_inventory_by_owner(struct Database *db, char *owner);
+int Database_create_inventory(struct Database *db, char *owner);
+int Database_set_inventory(struct Database *db, struct InventoryRecord *record);
+
+struct ItemRecord **Database_get_items_in_inventory(struct Database *db, char *owner);

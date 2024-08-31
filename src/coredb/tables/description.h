@@ -39,8 +39,9 @@ struct DescriptionTable {
 
 struct DescriptionTable *DescriptionTable_create();
 void DescriptionTable_init(struct DescriptionTable *table);
-void DescriptionTable_set(struct DescriptionTable *table, struct DescriptionRecord *entry);
+unsigned short DescriptionTable_set(struct DescriptionTable *table, struct DescriptionRecord *entry);
 struct DescriptionRecord *DescriptionTable_get(struct DescriptionTable *table, unsigned short id);
 struct DescriptionRecord *DescriptionTable_get_next(struct DescriptionTable *table, unsigned short id); // For easy continuation of text
+struct DescriptionRecord *DescriptionTable_get_by_prefix(struct DescriptionTable *table, char *prefix);
 void DescriptionTable_delete(struct DescriptionTable *table, unsigned short id);
 void DescriptionTable_destroy(struct DescriptionTable *table);

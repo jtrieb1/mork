@@ -49,6 +49,48 @@ const char *dbname = "mork.db";
 
 struct Database *game_db = NULL;
 
+void clear_screen()
+{
+    printf("\033[H\033[J\033[H");
+    return;
+}
+
+void set_text_bold()
+{
+    printf("\033[1m");
+    return;
+}
+
+void set_text_normal()
+{
+    printf("\033[0m");
+    return;
+}
+
+void set_text_green()
+{
+    printf("\033[32m");
+    return;
+}
+
+void set_text_white()
+{
+    printf("\033[37m");
+    return;
+}
+
+void set_cursor_to_screen_top()
+{
+    printf("\033[1;1H");
+    return;
+}
+
+void set_cursor_to_screen_bottom()
+{
+    printf("\033[999;1H");
+    return;
+}
+
 void setup()
 {
     char *full_path = malloc(strlen(dir_name) + strlen(dbname) + 2);
@@ -76,7 +118,12 @@ void setup()
     Database_open(game_db, full_path);
     check(game_db, "Could not open Mork database");
 
+    clear_screen();
+    set_text_bold();
+    set_text_green();
     printf("%s\n", title);
+    set_text_normal();
+    set_text_white();
     printf("%s\n", intro_text);
 
     free(full_path);

@@ -99,23 +99,25 @@ void Character_destroy(struct Character *character)
 void Character_save(struct Database *db, struct Character *character)
 {
     int character_id = -1;
-    struct CharacterStatsRecord *existing = Database_getCharacterStatsByName(db, character->name);
+    struct CharacterRecord *existing = Database_getCharacterStatsByName(db, character->name);
     if (existing == NULL) {
         // Create
-        struct CharacterStatsRecord *record = CharacterStatsRecord_create(
+        struct CharacterRecord *record = CharacterRecord_create(
             character->name,
             character->level,
-            character->experience,
             character->health,
             character->max_health,
             character->mana,
             character->max_mana,
-            character->strength,
-            character->dexterity,
-            character->intelligence,
-            character->wisdom,
-            character->charisma,
-            character->funkiness
+            (unsigned char[6]){
+                character->strength,
+                character->dexterity,
+                character->intelligence,
+                character->wisdom,
+                character->charisma,
+                character->funkiness
+            },
+            6
         );
         character_id = Database_createCharacterStats(db, record);
         free(record);
@@ -146,7 +148,7 @@ error:
 
 struct Character *Character_load(struct Database *db, char *name)
 {
-    struct CharacterStatsRecord *record = Database_getCharacterStatsByName(db, name);
+    struct CharacterRecord *record = Database_getCharacterStatsByName(db, name);
     check(record != NULL, "Failed to load character record");
 
     struct Character *character = Character_create(

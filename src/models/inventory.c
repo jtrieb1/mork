@@ -168,7 +168,7 @@ void Inventory_print(struct Inventory *inventory)
 int Inventory_save(struct Database *db, int owner_id, struct Inventory *inventory)
 {
     struct InventoryRecord *record = NULL;
-    struct CharacterStatsRecord *owner = Database_getCharacterStats(db, owner_id);
+    struct CharacterRecord *owner = Database_getCharacterStats(db, owner_id);
 
     check(owner != NULL, "Failed to get owner record");
     record = Database_getInventoryByOwner(db, owner->name);
@@ -191,7 +191,7 @@ error:
 
 struct Inventory *Inventory_load(struct Database *db, int owner_id)
 {
-    struct CharacterStatsRecord *owner = Database_getCharacterStats(db, owner_id);
+    struct CharacterRecord *owner = Database_getCharacterStats(db, owner_id);
     struct InventoryRecord *record = Database_getInventoryByOwner(db, owner->name);
     check(record != NULL, "Inventory record does not exist in database");
 

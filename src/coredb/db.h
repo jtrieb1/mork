@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include "tables/character_stats.h"
+#include "tables/character.h"
 #include "tables/description.h"
 #include "tables/dialog.h"
 #include "tables/inventory.h"
@@ -59,10 +59,10 @@ void Database_print(struct Database *db, enum Table table);
 unsigned int Database_getNextIndex(struct Database *db, enum Table table);
 
 // Record-level ops (setters return index of record in table)
-struct CharacterStatsRecord *Database_getCharacterStats(struct Database *db, int id);
-struct CharacterStatsRecord *Database_getCharacterStatsByName(struct Database *db, char *name);
-int Database_createCharacterStats(struct Database *db, struct CharacterStatsRecord *stats);
-int Database_updateCharacterStats(struct Database *db, struct CharacterStatsRecord *stats, int id);
+struct CharacterRecord *Database_getCharacterStats(struct Database *db, int id);
+struct CharacterRecord *Database_getCharacterStatsByName(struct Database *db, char *name);
+int Database_createCharacterStats(struct Database *db, struct CharacterRecord *stats);
+int Database_updateCharacterStats(struct Database *db, struct CharacterRecord *stats, int id);
 void Database_deleteCharacterStats(struct Database *db, int id);
 
 struct DescriptionRecord *Database_getDescription(struct Database *db, int id);

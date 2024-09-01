@@ -17,20 +17,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "db.h"
-#include "tables/character_stats.h"
-#include "tables/description.h"
-#include "tables/dialog.h"
-#include "tables/inventory.h"
-#include "tables/items.h"
 
 #include <assert.h>
-#include <stdio.h>
 #include <lcthw/dbg.h>
 
 void Database_init(struct Database *db)
 {
     // Initialize all tables
-    db->tables[CHARACTER_STATS] = CharacterStatsTable_create();
+    db->tables[CHARACTER_STATS] = CharacterTable_create();
     db->tables[DIALOG] = DialogTable_create();
     db->tables[ITEMS] = ItemTable_create();
     db->tables[DESCRIPTION] = DescriptionTable_create();
@@ -47,7 +41,7 @@ long table_offset(enum Table table)
     for (enum Table tbl = 0; tbl < table; tbl++) {
         switch (tbl) {
             case CHARACTER_STATS:
-                offset += sizeof(struct CharacterStatsTable);
+                offset += sizeof(struct CharacterTable);
                 break;
             case DESCRIPTION:
                 offset += sizeof(struct DescriptionTable);
@@ -78,7 +72,7 @@ size_t table_size(enum Table table)
 
     switch (table) {
         case CHARACTER_STATS:
-            return sizeof(struct CharacterStatsTable);
+            return sizeof(struct CharacterTable);
         case DESCRIPTION:
             return sizeof(struct DescriptionTable);
         case DIALOG:
@@ -190,7 +184,7 @@ void Database_destroy(struct Database *db)
         switch (tbl) {
             case CHARACTER_STATS:
                 if (db->tables[tbl] ==  NULL) break;
-                CharacterStatsTable_destroy((struct CharacterStatsTable *)db->tables[tbl]);
+                CharacterTable_destroy((struct CharacterTable *)db->tables[tbl]);
                 break;
             case DESCRIPTION:
                 if (db->tables[tbl] == NULL) break;
@@ -264,55 +258,55 @@ error:
     return 0;
 }
 
-struct CharacterStatsRecord *Database_getCharacterStats(struct Database *db, int id)
+struct CharacterRecord *Database_getCharacterStats(struct Database *db, int id)
 {
     check(db != NULL, "Database is NULL");
 
-    struct CharacterStatsTable *table = db->tables[CHARACTER_STATS];
+    struct CharacterTable *table = db->tables[CHARACTER_STATS];
     check(table != NULL, "Character stats table is NULL");
 
-    return CharacterStatsTable_get(table, id);
+    return CharacterTable_get(table, id);
 
 error:
     return NULL;
 }
 
-struct CharacterStatsRecord *Database_getCharacterStatsByName(struct Database *db, char *name)
+struct CharacterRecord *Database_getCharacterStatsByName(struct Database *db, char *name)
 {
     check(db != NULL, "Database is NULL");
 
-    struct CharacterStatsTable *table = db->tables[CHARACTER_STATS];
+    struct CharacterTable *table = db->tables[CHARACTER_STATS];
     check(table != NULL, "Character stats table is NULL");
 
-    return CharacterStatsTable_getByName(table, name);
+    return CharacterTable_getByName(table, name);
 
 error:
     return NULL;
 }
 
-int Database_createCharacterStats(struct Database *db, struct CharacterStatsRecord *stats)
+int Database_createCharacterStats(struct Database *db, struct CharacterRecord *stats)
 {
     check(db != NULL, "Expected a non-null database.");
 
-    struct CharacterStatsTable *table = db->tables[CHARACTER_STATS];
+    struct CharacterTable *table = db->tables[CHARACTER_STATS];
     check(table != NULL, "Character stats table is not initialized.");
 
     stats->id = Database_getNextIndex(db, CHARACTER_STATS);
-    unsigned char idx = CharacterStatsTable_newRow(table, stats);
+    unsigned char idx = CharacterTable_newRow(table, stats);
     return (int)idx;
 
 error:
     return -1;
 }
 
-int Database_updateCharacterStats(struct Database *db, struct CharacterStatsRecord *stats, int id)
+int Database_updateCharacterStats(struct Database *db, struct CharacterRecord *stats, int id)
 {
     check(db != NULL, "Expected a non-null database.");
 
-    struct CharacterStatsTable *table = db->tables[CHARACTER_STATS];
+    struct CharacterTable *table = db->tables[CHARACTER_STATS];
     check(table != NULL, "Character stats table is not initialized.");
 
-    unsigned char idx = CharacterStatsTable_update(table, stats, id);
+    unsigned char idx = CharacterTable_update(table, stats, id);
 
     return (int)idx;
 
@@ -541,7 +535,7 @@ struct InventoryRecord *Database_getInventoryByOwner(struct Database *db, char *
     struct InventoryTable *table = db->tables[INVENTORY];
     check(table != NULL, "Inventory table is not initialized.");
 
-    struct CharacterStatsRecord *owner_record = Database_getCharacterStatsByName(db, owner);
+    struct CharacterRecord *owner_record = Database_getCharacterStatsByName(db, owner);
     check(owner_record != NULL, "Character stats record not found.");
 
     return InventoryTable_getByOwner(table, owner_record->id);
@@ -557,7 +551,7 @@ int Database_createInventory(struct Database *db, char *owner)
     struct InventoryTable *table = db->tables[INVENTORY];
     check(table != NULL, "Inventory table is not initialized.");
 
-    struct CharacterStatsRecord *owner_record = Database_getCharacterStatsByName(db, owner);
+    struct CharacterRecord *owner_record = Database_getCharacterStatsByName(db, owner);
     check(owner_record != NULL, "Character stats record not found.");
 
     unsigned short idx = InventoryTable_add(table, owner_record->id, Database_getNextIndex(db, INVENTORY));

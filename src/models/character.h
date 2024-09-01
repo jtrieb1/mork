@@ -21,6 +21,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "../coredb/db.h"
 #include "inventory.h"
 
+enum Stats {
+    STRENGTH,
+    DEXTERITY,
+    INTELLIGENCE,
+    WISDOM,
+    CHARISMA,
+    FUNKINESS
+};
+
 struct Character {
     char name[MAX_NAME_LEN];
     unsigned char level;

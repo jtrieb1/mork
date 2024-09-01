@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#define MAX_NAME_LEN 232 // Cap names at 231 characters, explained below
+#define MAX_NAME_LEN 231 // Cap names at 230 characters
 #define MAX_ROWS_CS 256  // Maximum number of rows in the table
 
 // Since we're turning this into a library, we need to be more generic with what
@@ -37,7 +37,8 @@ struct CharacterRecord {
     unsigned long health_and_mana;      // 4 bytes
     unsigned long max_health_and_mana;  // 4 bytes
     unsigned long long stats;           // 8 bytes
-    char name[MAX_NAME_LEN];            // 232 bytes
+    unsigned char numStats;             // 1 byte
+    char name[MAX_NAME_LEN];            // 231 bytes
                                         // Total: 256 bytes per row
 };
 

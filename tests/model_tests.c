@@ -10,6 +10,15 @@
 
 struct Database *db = NULL;
 
+enum Stats {
+    STRENGTH,
+    DEXTERITY,
+    INTELLIGENCE,
+    CHARISMA,
+    WISDOM,
+    FUNKINESS
+};
+
 char *test_create_db_file()
 {
     FILE *file = fopen(test_db, "w");
@@ -35,28 +44,25 @@ char *test_create_character()
 {
     struct Character *mork = Character_create(
         "Mork",
-        5, // strength
-        5, // dexterity
-        5, // intelligence
-        5, // wisdom
-        5, // charisma
-        10 // funkiness
+        1,                                            // Level
+        (unsigned char[6]){5, 5, 5, 5, 5, 10},        // Stats in enum order
+        6                                             // Number of stats
     );
 
     mu_assert(mork != NULL, "Failed to create character.");
     mu_assert(strcmp(mork->name, "Mork") == 0, "Failed to set name.");
     mu_assert(mork->level == 1, "Failed to set level.");
     mu_assert(mork->experience == 0, "Failed to set experience.");
-    mu_assert(mork->health == 100, "Failed to set health.");
-    mu_assert(mork->max_health == 100, "Failed to set max_health.");
-    mu_assert(mork->mana == 100, "Failed to set mana.");
-    mu_assert(mork->max_mana == 100, "Failed to set max_mana.");
-    mu_assert(mork->strength == 5, "Failed to set strength.");
-    mu_assert(mork->dexterity == 5, "Failed to set dexterity.");
-    mu_assert(mork->intelligence == 5, "Failed to set intelligence.");
-    mu_assert(mork->wisdom == 5, "Failed to set wisdom.");
-    mu_assert(mork->charisma == 5, "Failed to set charisma.");
-    mu_assert(mork->funkiness == 10, "Failed to set funkiness.");
+    mu_assert(mork->health == 110, "Failed to set health.");
+    mu_assert(mork->max_health == 110, "Failed to set max_health.");
+    mu_assert(mork->mana == 60, "Failed to set mana.");
+    mu_assert(mork->max_mana == 60, "Failed to set max_mana.");
+    mu_assert(Character_getStat(mork, STRENGTH) == 5, "Failed to set strength.");
+    mu_assert(Character_getStat(mork, DEXTERITY) == 5, "Failed to set dexterity.");
+    mu_assert(Character_getStat(mork, INTELLIGENCE) == 5, "Failed to set intelligence.");
+    mu_assert(Character_getStat(mork, WISDOM) == 5, "Failed to set wisdom.");
+    mu_assert(Character_getStat(mork, CHARISMA) == 5, "Failed to set charisma.");
+    mu_assert(Character_getStat(mork, FUNKINESS) == 10, "Failed to set funkiness.");
     mu_assert(mork->inventory != NULL, "Failed to create inventory.");
 
     Character_save(db, mork); // Save mork to the database
@@ -68,16 +74,16 @@ char *test_create_character()
     mu_assert(strcmp(mork->name, "Mork") == 0, "Failed to load name.");
     mu_assert(mork->level == 1, "Failed to load level.");
     mu_assert(mork->experience == 0, "Failed to load experience.");
-    mu_assert(mork->health == 100, "Failed to load health.");
-    mu_assert(mork->max_health == 100, "Failed to load max_health.");
-    mu_assert(mork->mana == 100, "Failed to load mana.");
-    mu_assert(mork->max_mana == 100, "Failed to load max_mana.");
-    mu_assert(mork->strength == 5, "Failed to load strength.");
-    mu_assert(mork->dexterity == 5, "Failed to load dexterity.");
-    mu_assert(mork->intelligence == 5, "Failed to load intelligence.");
-    mu_assert(mork->wisdom == 5, "Failed to load wisdom.");
-    mu_assert(mork->charisma == 5, "Failed to load charisma.");
-    mu_assert(mork->funkiness == 10, "Failed to load funkiness.");
+    mu_assert(mork->health == 110, "Failed to load health.");
+    mu_assert(mork->max_health == 110, "Failed to load max_health.");
+    mu_assert(mork->mana == 60, "Failed to load mana.");
+    mu_assert(mork->max_mana == 60, "Failed to load max_mana.");
+    mu_assert(Character_getStat(mork, STRENGTH) == 5, "Failed to load strength.");
+    mu_assert(Character_getStat(mork, DEXTERITY) == 5, "Failed to load dexterity.");
+    mu_assert(Character_getStat(mork, INTELLIGENCE) == 5, "Failed to load intelligence.");
+    mu_assert(Character_getStat(mork, WISDOM) == 5, "Failed to load wisdom.");
+    mu_assert(Character_getStat(mork, CHARISMA) == 5, "Failed to load charisma.");
+    mu_assert(Character_getStat(mork, FUNKINESS) == 10, "Failed to load funkiness.");
     mu_assert(mork->inventory != NULL, "Failed to load inventory.");
 
     Character_destroy(mork); // Mork will be back.

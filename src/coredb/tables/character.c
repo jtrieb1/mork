@@ -68,6 +68,8 @@ struct CharacterRecord *CharacterRecord_create(
     record->health_and_mana = SET_HEALTH_AND_MANA(health, mana);
     record->max_health_and_mana = SET_HEALTH_AND_MANA(maxHealth, maxMana);
 
+    record->numStats = numStats;
+    record->stats = 0;
     for (unsigned int i = 0; i < numStats; i++) {
         record->stats = SET_STAT(record->stats, i, stats[i]);
     }

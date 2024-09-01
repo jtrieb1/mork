@@ -21,29 +21,39 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <lcthw/dbg.h>
 
-struct Character *Character_create(const char *name, unsigned short strength, unsigned short dexterity, unsigned short intelligence, unsigned short wisdom, unsigned short charisma, unsigned short funkiness)
+unsigned short calculateMaxHealth(unsigned char level)
 {
-    struct Character *character = (struct Character *)malloc(sizeof(struct Character));
+    return 100 + (level * 10);
+}
+
+unsigned short calculateMaxMana(unsigned char level)
+{
+    return 50 + (level * 10);
+}
+
+struct Character *Character_create(
+    char *name,
+    unsigned char level,
+    unsigned char *stats,
+    unsigned char numStats
+)
+{
+    struct Character *character = (struct Character *)calloc(1, sizeof(struct Character));
     check_mem(character);
 
     strncpy(character->name, name, MAX_NAME_LEN);
     check_mem(character->name);
     character->name[MAX_NAME_LEN - 1] = '\0';
 
-    // New characters start at level 1
-    character->level = 1;
+    character->level = level;
     character->experience = 0;
-    character->health = 100;
-    character->max_health = 100;
-    character->mana = 100;
-    character->max_mana = 100;
+    character->health = calculateMaxHealth(level);
+    character->max_health = calculateMaxHealth(level);
+    character->mana = calculateMaxMana(level);
+    character->max_mana = calculateMaxMana(level);
 
-    character->strength = strength;
-    character->dexterity = dexterity;
-    character->intelligence = intelligence;
-    character->wisdom = wisdom;
-    character->charisma = charisma;
-    character->funkiness = funkiness;
+    character->numStats = numStats;
+    memcpy(character->stats, stats, numStats);
 
     // Character starts with empty inventory
     character->inventory = Inventory_create();
@@ -59,12 +69,9 @@ struct Character *Character_clone(struct Character *source)
 {
     struct Character *character = Character_create(
         source->name,
-        source->strength,
-        source->dexterity,
-        source->intelligence,
-        source->wisdom,
-        source->charisma,
-        source->funkiness
+        source->level,
+        source->stats,
+        source->numStats
     );
     check(character, "Failed to clone character");
 
@@ -109,15 +116,8 @@ void Character_save(struct Database *db, struct Character *character)
             character->max_health,
             character->mana,
             character->max_mana,
-            (unsigned char[6]){
-                character->strength,
-                character->dexterity,
-                character->intelligence,
-                character->wisdom,
-                character->charisma,
-                character->funkiness
-            },
-            6
+            character->stats,
+            character->numStats
         );
         character_id = Database_createCharacterStats(db, record);
         free(record);
@@ -127,12 +127,11 @@ void Character_save(struct Database *db, struct Character *character)
         existing->experience = character->experience;
         existing->health_and_mana = character->health;
         existing->max_health_and_mana = character->max_health;
-        existing->stats = SET_STAT(existing->stats, STRENGTH, character->strength);
-        existing->stats = SET_STAT(existing->stats, DEXTERITY, character->dexterity);
-        existing->stats = SET_STAT(existing->stats, INTELLIGENCE, character->intelligence);
-        existing->stats = SET_STAT(existing->stats, WISDOM, character->wisdom);
-        existing->stats = SET_STAT(existing->stats, CHARISMA, character->charisma);
-        existing->stats = SET_STAT(existing->stats, FUNKINESS, character->funkiness);
+        existing->numStats = character->numStats;
+
+        for (int i = 0; i < character->numStats; i++) {
+            existing->stats = SET_STAT(existing->stats, i, character->stats[i]);
+        }
 
         character_id = Database_updateCharacterStats(db, existing, existing->id);
     }
@@ -151,23 +150,27 @@ struct Character *Character_load(struct Database *db, char *name)
     struct CharacterRecord *record = Database_getCharacterStatsByName(db, name);
     check(record != NULL, "Failed to load character record");
 
+    unsigned char *stats = (unsigned char *)calloc(record->numStats, sizeof(unsigned char));
+    for (int i = 0; i < record->numStats; i++) {
+        stats[i] = GET_STAT(record->stats, i);
+    }
+
     struct Character *character = Character_create(
         record->name,
-        GET_STAT(record->stats, STRENGTH),
-        GET_STAT(record->stats, DEXTERITY),
-        GET_STAT(record->stats, INTELLIGENCE),
-        GET_STAT(record->stats, WISDOM),
-        GET_STAT(record->stats, CHARISMA),
-        GET_STAT(record->stats, FUNKINESS)
+        record->level,
+        stats,
+        record->numStats
     );
     check(character, "Failed to create character");
 
     character->level = record->level;
     character->experience = record->experience;
-    character->health = record->health_and_mana;
-    character->max_health = record->max_health_and_mana;
-    character->mana = record->health_and_mana;
-    character->max_mana = record->max_health_and_mana;
+    character->health = GET_HEALTH(record->health_and_mana);
+    character->max_health = GET_HEALTH(record->max_health_and_mana);
+    character->mana = GET_MANA(record->health_and_mana);
+    character->max_mana = GET_MANA(record->max_health_and_mana);
+    memcpy(character->stats, stats, record->numStats);
+    free(stats);
 
     // They get an inventory during creation, so destroy it
     Inventory_destroy(character->inventory);
@@ -177,4 +180,8 @@ struct Character *Character_load(struct Database *db, char *name)
 
 error:
     return NULL;
+}
+
+unsigned short Character_getStat(struct Character *character, unsigned char stat) {
+    return character->stats[stat];
 }

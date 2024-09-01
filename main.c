@@ -44,6 +44,15 @@ const char *intro_text = ""
 "Written by Jacob Triebwasser, contact at \n"
 "jacob.triebwasser@gmail.com\n";
 
+enum Stats {
+    STRENGTH,
+    DEXTERITY,
+    INTELLIGENCE,
+    CHARISMA,
+    WISDOM,
+    FUNKINESS
+};
+
 const char *dir_name = "/tmp/morkdata";
 const char *dbname = "mork.db";
 

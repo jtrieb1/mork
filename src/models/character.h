@@ -21,15 +21,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "../coredb/db.h"
 #include "inventory.h"
 
-enum Stats {
-    STRENGTH,
-    DEXTERITY,
-    INTELLIGENCE,
-    WISDOM,
-    CHARISMA,
-    FUNKINESS
-};
-
 struct Character {
     char name[MAX_NAME_LEN];
     unsigned char level;
@@ -38,20 +29,23 @@ struct Character {
     unsigned short mana;
     unsigned short max_health;
     unsigned short max_mana;
-    unsigned short strength;
-    unsigned short dexterity;
-    unsigned short intelligence;
-    unsigned short wisdom;
-    unsigned short charisma;
-    unsigned short funkiness;
+    unsigned char numStats;
+    unsigned char stats[16];
 
     struct Inventory *inventory;
 };
 
-struct Character *Character_create(const char *name, unsigned short strength, unsigned short dexterity, unsigned short intelligence, unsigned short wisdom, unsigned short charisma, unsigned short funkiness);
+struct Character *Character_create(
+    char *name,
+    unsigned char level,
+    unsigned char *stats,
+    unsigned char numStats
+);
 void Character_destroy(struct Character *character);
 
 struct Character *Character_clone(struct Character *source);
 
 void Character_save(struct Database *db, struct Character *character);
 struct Character *Character_load(struct Database *db, char *name);
+
+unsigned short Character_getStat(struct Character *character, unsigned char stat);

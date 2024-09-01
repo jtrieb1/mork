@@ -193,7 +193,10 @@ struct Inventory *Inventory_load(struct Database *db, int owner_id)
 {
     struct CharacterRecord *owner = Database_getCharacter(db, owner_id);
     struct InventoryRecord *record = Database_getInventoryByOwner(db, owner->name);
-    check(record != NULL, "Inventory record does not exist in database");
+
+    if (record == NULL) {
+        return Inventory_create();
+    }
 
     struct Inventory *inventory = Inventory_create();
 
@@ -204,7 +207,4 @@ struct Inventory *Inventory_load(struct Database *db, int owner_id)
     }
 
     return inventory;
-
-error:
-    return NULL;
 }

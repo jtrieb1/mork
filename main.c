@@ -27,23 +27,23 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "src/models/character.h"
 #include "src/ui/terminal.h"
 
-const char *title = ""
-"_______  _______  _______  _             \n"
-"(       )(  ___  )(  ____ )| \\    /\\   \n"
-"| () () || (   ) || (    )||  \\  / /    \n"
-"| || || || |   | || (____)||  (_/ /      \n"
-"| |(_)| || |   | ||     __)|   _ (       \n"
-"| |   | || |   | || (\\ (   |  ( \\ \\   \n"
-"| )   ( || (___) || ) \\ \\__|  /  \\ \\ \n"
-"|/     \\|(_______)|/   \\__/|_/    \\/  \n"
-"                                         \n"
-"\n";
+char *title = ""
+"_______  _______  _______  _\n"
+"(       )(  ___  )(  ____ )| \\    /\\\n"
+"| () () || (   ) || (    )||  \\  / /\n"
+"| || || || |   | || (____)||  (_/ /\n"
+"| |(_)| || |   | ||     __)|   _ (\n"
+"| |   | || |   | || (\\ (   |  ( \\ \\\n"
+"| )   ( || (___) || ) \\ \\__|  /  \\ \\\n"
+"|/     \\|(_______)|/   \\__/|_/    \\/\n";
 
 const char *intro_text = ""
 "MORK I: The Cool Aboveground Pool\n"
 "Interactive Fiction - A Poorly-Written Parody\n"
 "Written by Jacob Triebwasser, contact at \n"
-"jacob.triebwasser@gmail.com\n";
+"jacob.triebwasser@gmail.com\n"
+"\n"
+"Type 'start' to start or 'quit' to quit.\n";
 
 enum Stats {
     STRENGTH,
@@ -66,6 +66,9 @@ struct Character *mork = NULL;
 struct Character *mindy = NULL;
 struct Character *alf = NULL;
 struct Character *urkel = NULL;
+
+// Locations
+struct Location *start = NULL;
 
 void initialize_characters()
 {
@@ -129,10 +132,14 @@ void setup()
     clear_screen();
 
     set_title_text_format();
-    printf("%s\n", title);
+    print_centered(title);
+    printf("\n");
 
     set_normal_text_format();
     printf("%s\n", intro_text);
+
+    start = Location_create("Mork and Mindy's House", "A small place shared by Mork and Mindy");
+    check(start != NULL, "Could not create starting location");
 
     free(full_path);
     return;
@@ -142,9 +149,22 @@ error:
     exit(1);
 }
 
+void refresh()
+{
+    clear_screen();
+    set_cursor_to_screen_top();
+    set_title_text_format();
+    print_centered(title);
+    printf("\n\n");
+    set_normal_text_format();
+}
+
 void cleanup()
 {
     trash_characters();
+    if (start != NULL) {
+        Location_destroy(start);
+    }
     if (game_db != NULL) {
         Database_destroy(game_db);
     }
@@ -156,11 +176,48 @@ int main()
     setup();
     check(game_db != NULL, "Database not initialized");
 
-    printf("Welcome, %s\n", player->name);
-    printf("You are standing in a room. There is a door to the north.\n");
+    char *input = NULL;
+    size_t input_len = 0;
+    ssize_t read = 0;
+
+    read = getline(&input, &input_len, stdin);
+    check(read != -1, "Could not read input");
+    if (strncmp(input, "quit", 4) == 0) {
+        cleanup();
+        return 0;
+    } else if (strncmp(input, "start", 5) != 0) {
+        printf("Invalid command. Type 'start' to begin or 'quit' to exit.\n");
+        cleanup();
+        return 1;
+    }
 
     // Main game loop
-    // TODO: Implement game loop
+    int game_running = 1;
+
+    while (game_running) {
+        refresh();
+        // Save cursor position for next frame
+        int row, col;
+        get_cursor_position(&row, &col);
+
+        // Print current state
+        printf("You are standing in a room. There is a door to the north.\n\n");
+        printf("> ");
+        print_status_bar(player, start);
+
+        // Get user input
+        read = getline(&input, &input_len, stdin);
+
+        // Check for exit condition
+        if (read == -1) {
+            game_running = 0;
+            break;
+        }
+
+        // Parse user input
+        // Execute user input
+        // Update game state
+    }
 
     // Cleanup
     cleanup();

@@ -25,6 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "src/coredb/db.h"
 #include "src/models/character.h"
+#include "src/ui/terminal.h"
 
 const char *title = ""
 "_______  _______  _______  _             \n"
@@ -58,46 +59,42 @@ const char *dbname = "mork.db";
 
 struct Database *game_db = NULL;
 
-void clear_screen()
+struct Character *player = NULL;
+
+// NPC characters
+struct Character *mork = NULL;
+struct Character *mindy = NULL;
+struct Character *alf = NULL;
+struct Character *urkel = NULL;
+
+void initialize_characters()
 {
-    printf("\033[H\033[J\033[H");
-    return;
+    player = Character_create("You", 1, (unsigned char[6]){3,3,3,3,3,1}, 6);
+    mork = Character_load(game_db, "Mork");
+    mindy = Character_load(game_db, "Mindy");
+    alf = Character_load(game_db, "Alf");
+    urkel = Character_load(game_db, "Urkel");
 }
 
-void set_text_bold()
+void trash_characters()
 {
-    printf("\033[1m");
-    return;
+    Character_destroy(player);
+    Character_destroy(mork);
+    Character_destroy(mindy);
+    Character_destroy(alf);
+    Character_destroy(urkel);
 }
 
-void set_text_normal()
+void set_title_text_format()
 {
-    printf("\033[0m");
-    return;
+    set_text_bold();
+    set_text_green();
 }
 
-void set_text_green()
+void set_normal_text_format()
 {
-    printf("\033[32m");
-    return;
-}
-
-void set_text_white()
-{
-    printf("\033[37m");
-    return;
-}
-
-void set_cursor_to_screen_top()
-{
-    printf("\033[1;1H");
-    return;
-}
-
-void set_cursor_to_screen_bottom()
-{
-    printf("\033[999;1H");
-    return;
+    set_text_normal();
+    set_text_white();
 }
 
 void setup()
@@ -127,12 +124,14 @@ void setup()
     Database_open(game_db, full_path);
     check(game_db, "Could not open Mork database");
 
+    initialize_characters();
+
     clear_screen();
-    set_text_bold();
-    set_text_green();
+
+    set_title_text_format();
     printf("%s\n", title);
-    set_text_normal();
-    set_text_white();
+
+    set_normal_text_format();
     printf("%s\n", intro_text);
 
     free(full_path);
@@ -145,6 +144,7 @@ error:
 
 void cleanup()
 {
+    trash_characters();
     if (game_db != NULL) {
         Database_destroy(game_db);
     }
@@ -155,9 +155,6 @@ int main()
 {
     setup();
     check(game_db != NULL, "Database not initialized");
-
-    struct Character *player = Character_load(game_db, "Mork");
-    check(player != NULL, "Could not load player character");
 
     printf("Welcome, %s\n", player->name);
     printf("You are standing in a room. There is a door to the north.\n");
@@ -170,8 +167,9 @@ int main()
 
     // Note: Game database should be prepopulated with all assets for the game.
     // Tools for this are not yet implemented, but every table has working write methods.
+    return 0;
 
 error:
     cleanup();
-    return 0;
+    return 1;
 }

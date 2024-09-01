@@ -16,6 +16,9 @@ all: mork tests
 mork: $(TARGET) $(SO_TARGET)
 	$(CC) -o bin/mork main.c $(CFLAGS) $(LIBS) $(TARGET)
 
+dbcli: $(TARGET) $(SO_TARGET)
+	$(CC) -o bin/dbcli dbcli.c $(CFLAGS) $(LIBS) $(TARGET)
+
 dev: CFLAGS=-Wall -g -Isrc -Wall -Wextra $(OPTFLAGS)
 dev: all
 

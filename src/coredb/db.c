@@ -24,11 +24,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 void Database_init(struct Database *db)
 {
     // Initialize all tables
-    db->tables[CHARACTER_STATS] = CharacterTable_create();
+    db->tables[CHARACTERS] = CharacterTable_create();
     db->tables[DIALOG] = DialogTable_create();
     db->tables[ITEMS] = ItemTable_create();
     db->tables[DESCRIPTION] = DescriptionTable_create();
     db->tables[INVENTORY] = InventoryTable_create();
+    db->tables[LOCATIONS] = LocationTable_create();
     db->initialized = 1;
 
 }
@@ -40,7 +41,7 @@ long table_offset(enum Table table)
     long offset = 0;
     for (enum Table tbl = 0; tbl < table; tbl++) {
         switch (tbl) {
-            case CHARACTER_STATS:
+            case CHARACTERS:
                 offset += sizeof(struct CharacterTable);
                 break;
             case DESCRIPTION:
@@ -54,6 +55,9 @@ long table_offset(enum Table table)
                 break;
             case ITEMS:
                 offset += sizeof(struct ItemTable);
+                break;
+            case LOCATIONS:
+                offset += sizeof(struct LocationTable);
                 break;
             default:
                 sentinel("Unknown table type");
@@ -71,7 +75,7 @@ size_t table_size(enum Table table)
     assert(table >= 0 && table < MAX_TABLES);
 
     switch (table) {
-        case CHARACTER_STATS:
+        case CHARACTERS:
             return sizeof(struct CharacterTable);
         case DESCRIPTION:
             return sizeof(struct DescriptionTable);
@@ -81,6 +85,8 @@ size_t table_size(enum Table table)
             return sizeof(struct InventoryTable);
         case ITEMS:
             return sizeof(struct ItemTable);
+        case LOCATIONS:
+            return sizeof(struct LocationTable);
         default:
             sentinel("Unknown table type");
     }
@@ -182,7 +188,7 @@ void Database_destroy(struct Database *db)
 
     for (enum Table tbl = 0; tbl < MAX_TABLES; tbl++) {
         switch (tbl) {
-            case CHARACTER_STATS:
+            case CHARACTERS:
                 if (db->tables[tbl] ==  NULL) break;
                 CharacterTable_destroy((struct CharacterTable *)db->tables[tbl]);
                 break;
@@ -201,6 +207,10 @@ void Database_destroy(struct Database *db)
             case ITEMS:
                 if (db->tables[tbl] == NULL) break;
                 ItemTable_destroy((struct ItemTable *)db->tables[tbl]);
+                break;
+            case LOCATIONS:
+                if (db->tables[tbl] == NULL) break;
+                LocationTable_destroy((struct LocationTable *)db->tables[tbl]);
                 break;
             default:
                 sentinel("Unknown table: %d", tbl);
@@ -258,11 +268,11 @@ error:
     return 0;
 }
 
-struct CharacterRecord *Database_getCharacterStats(struct Database *db, int id)
+struct CharacterRecord *Database_getCharacter(struct Database *db, int id)
 {
     check(db != NULL, "Database is NULL");
 
-    struct CharacterTable *table = db->tables[CHARACTER_STATS];
+    struct CharacterTable *table = db->tables[CHARACTERS];
     check(table != NULL, "Character stats table is NULL");
 
     return CharacterTable_get(table, id);
@@ -271,11 +281,11 @@ error:
     return NULL;
 }
 
-struct CharacterRecord *Database_getCharacterStatsByName(struct Database *db, char *name)
+struct CharacterRecord *Database_getCharacterByName(struct Database *db, char *name)
 {
     check(db != NULL, "Database is NULL");
 
-    struct CharacterTable *table = db->tables[CHARACTER_STATS];
+    struct CharacterTable *table = db->tables[CHARACTERS];
     check(table != NULL, "Character stats table is NULL");
 
     return CharacterTable_getByName(table, name);
@@ -284,14 +294,14 @@ error:
     return NULL;
 }
 
-int Database_createCharacterStats(struct Database *db, struct CharacterRecord *stats)
+int Database_createCharacter(struct Database *db, struct CharacterRecord *stats)
 {
     check(db != NULL, "Expected a non-null database.");
 
-    struct CharacterTable *table = db->tables[CHARACTER_STATS];
+    struct CharacterTable *table = db->tables[CHARACTERS];
     check(table != NULL, "Character stats table is not initialized.");
 
-    stats->id = Database_getNextIndex(db, CHARACTER_STATS);
+    stats->id = Database_getNextIndex(db, CHARACTERS);
     unsigned char idx = CharacterTable_newRow(table, stats);
     return (int)idx;
 
@@ -299,11 +309,11 @@ error:
     return -1;
 }
 
-int Database_updateCharacterStats(struct Database *db, struct CharacterRecord *stats, int id)
+int Database_updateCharacter(struct Database *db, struct CharacterRecord *stats, int id)
 {
     check(db != NULL, "Expected a non-null database.");
 
-    struct CharacterTable *table = db->tables[CHARACTER_STATS];
+    struct CharacterTable *table = db->tables[CHARACTERS];
     check(table != NULL, "Character stats table is not initialized.");
 
     unsigned char idx = CharacterTable_update(table, stats, id);
@@ -312,6 +322,19 @@ int Database_updateCharacterStats(struct Database *db, struct CharacterRecord *s
 
 error:
     return -1;
+}
+
+void Database_deleteCharacter(struct Database *db, int id)
+{
+    check(db != NULL, "Expected a non-null database.");
+
+    struct CharacterTable *table = db->tables[CHARACTERS];
+    check(table != NULL, "Character stats table is not initialized.");
+
+    CharacterTable_delete(table, id);
+
+error:
+    return;
 }
 
 struct DialogRecord *Database_getDialog(struct Database *db, int id)
@@ -535,7 +558,7 @@ struct InventoryRecord *Database_getInventoryByOwner(struct Database *db, char *
     struct InventoryTable *table = db->tables[INVENTORY];
     check(table != NULL, "Inventory table is not initialized.");
 
-    struct CharacterRecord *owner_record = Database_getCharacterStatsByName(db, owner);
+    struct CharacterRecord *owner_record = Database_getCharacterByName(db, owner);
     check(owner_record != NULL, "Character stats record not found.");
 
     return InventoryTable_getByOwner(table, owner_record->id);
@@ -551,7 +574,7 @@ int Database_createInventory(struct Database *db, char *owner)
     struct InventoryTable *table = db->tables[INVENTORY];
     check(table != NULL, "Inventory table is not initialized.");
 
-    struct CharacterRecord *owner_record = Database_getCharacterStatsByName(db, owner);
+    struct CharacterRecord *owner_record = Database_getCharacterByName(db, owner);
     check(owner_record != NULL, "Character stats record not found.");
 
     unsigned short idx = InventoryTable_add(table, owner_record->id, Database_getNextIndex(db, INVENTORY));
@@ -606,6 +629,74 @@ void Database_deleteItem(struct Database *db, int id)
     check(table != NULL, "Item table is not initialized.");
 
     ItemTable_delete(table, id);
+
+error:
+    return;
+}
+
+struct LocationRecord *Database_getLocation(struct Database *db, int id)
+{
+    check(db != NULL, "Expected a non-null database.");
+
+    struct LocationTable *table = db->tables[LOCATIONS];
+    check(table != NULL, "Location table is not initialized.");
+
+    return LocationTable_get(table, id);
+
+error:
+    return NULL;
+}
+struct LocationRecord *Database_getLocationByName(struct Database *db, char *name)
+{
+    check(db != NULL, "Expected a non-null database.");
+
+    struct LocationTable *table = db->tables[LOCATIONS];
+    check(table != NULL, "Location table is not initialized.");
+
+    return LocationTable_getByName(table, name);
+
+error:
+    return NULL;
+}
+
+int Database_createLocation(struct Database *db, struct LocationRecord *location)
+{
+    check(db != NULL, "Expected a non-null database.");
+
+    struct LocationTable *table = db->tables[LOCATIONS];
+    check(table != NULL, "Location table is not initialized.");
+
+    location->id = Database_getNextIndex(db, LOCATIONS);
+    unsigned short idx = LocationTable_add(table, location);
+    return (int)idx;
+
+error:
+    return -1;
+}
+
+int Database_updateLocation(struct Database *db, struct LocationRecord *location, int id)
+{
+    check(db != NULL, "Expected a non-null database.");
+
+    struct LocationTable *table = db->tables[LOCATIONS];
+    check(table != NULL, "Location table is not initialized.");
+
+    location->id = id;
+    id = LocationTable_update(table, location, id);
+    return id;
+
+error:
+    return -1;
+}
+
+void Database_deleteLocation(struct Database *db, int id)
+{
+    check(db != NULL, "Expected a non-null database.");
+
+    struct LocationTable *table = db->tables[LOCATIONS];
+    check(table != NULL, "Location table is not initialized.");
+
+    LocationTable_remove(table, id);
 
 error:
     return;

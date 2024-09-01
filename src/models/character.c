@@ -106,7 +106,7 @@ void Character_destroy(struct Character *character)
 void Character_save(struct Database *db, struct Character *character)
 {
     int character_id = -1;
-    struct CharacterRecord *existing = Database_getCharacterStatsByName(db, character->name);
+    struct CharacterRecord *existing = Database_getCharacterByName(db, character->name);
     if (existing == NULL) {
         // Create
         struct CharacterRecord *record = CharacterRecord_create(
@@ -119,7 +119,7 @@ void Character_save(struct Database *db, struct Character *character)
             character->stats,
             character->numStats
         );
-        character_id = Database_createCharacterStats(db, record);
+        character_id = Database_createCharacter(db, record);
         free(record);
     } else {
         // Update
@@ -133,7 +133,7 @@ void Character_save(struct Database *db, struct Character *character)
             existing->stats = SET_STAT(existing->stats, i, character->stats[i]);
         }
 
-        character_id = Database_updateCharacterStats(db, existing, existing->id);
+        character_id = Database_updateCharacter(db, existing, existing->id);
     }
 
     // Save inventory
@@ -147,7 +147,7 @@ error:
 
 struct Character *Character_load(struct Database *db, char *name)
 {
-    struct CharacterRecord *record = Database_getCharacterStatsByName(db, name);
+    struct CharacterRecord *record = Database_getCharacterByName(db, name);
     check(record != NULL, "Failed to load character record");
 
     unsigned char *stats = (unsigned char *)calloc(record->numStats, sizeof(unsigned char));

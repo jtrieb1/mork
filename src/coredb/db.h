@@ -23,16 +23,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "tables/dialog.h"
 #include "tables/inventory.h"
 #include "tables/items.h"
+#include "tables/location.h"
 #include <stdio.h>
 
-#define MAX_TABLES 5
+#define MAX_TABLES 6
 
 enum Table {
-    CHARACTER_STATS = 0,
+    CHARACTERS = 0,
     DESCRIPTION,
     DIALOG,
     INVENTORY,
-    ITEMS
+    ITEMS,
+    LOCATIONS
 };
 
 struct Database {
@@ -59,11 +61,11 @@ void Database_print(struct Database *db, enum Table table);
 unsigned int Database_getNextIndex(struct Database *db, enum Table table);
 
 // Record-level ops (setters return index of record in table)
-struct CharacterRecord *Database_getCharacterStats(struct Database *db, int id);
-struct CharacterRecord *Database_getCharacterStatsByName(struct Database *db, char *name);
-int Database_createCharacterStats(struct Database *db, struct CharacterRecord *stats);
-int Database_updateCharacterStats(struct Database *db, struct CharacterRecord *stats, int id);
-void Database_deleteCharacterStats(struct Database *db, int id);
+struct CharacterRecord *Database_getCharacter(struct Database *db, int id);
+struct CharacterRecord *Database_getCharacterByName(struct Database *db, char *name);
+int Database_createCharacter(struct Database *db, struct CharacterRecord *stats);
+int Database_updateCharacter(struct Database *db, struct CharacterRecord *stats, int id);
+void Database_deleteCharacter(struct Database *db, int id);
 
 struct DescriptionRecord *Database_getDescription(struct Database *db, int id);
 struct DescriptionRecord *Database_getDescriptionByPrefix(struct Database *db, char *prefix);
@@ -91,3 +93,9 @@ int Database_updateInventory(struct Database *db, struct InventoryRecord *record
 void Database_deleteInventory(struct Database *db, int id);
 
 struct ItemRecord **Database_getItemsInInventory(struct Database *db, char *owner);
+
+struct LocationRecord *Database_getLocation(struct Database *db, int id);
+struct LocationRecord *Database_getLocationByName(struct Database *db, char *name);
+int Database_createLocation(struct Database *db, struct LocationRecord *location);
+int Database_updateLocation(struct Database *db, struct LocationRecord *location, int id);
+void Database_deleteLocation(struct Database *db, int id);

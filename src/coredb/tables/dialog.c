@@ -21,9 +21,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <lcthw/dbg.h>
 #include <stdlib.h>
 
+struct DialogRecord *DialogRecord_default()
+{
+    return DialogRecord_create(0, "", 0);
+}
+
 struct DialogRecord *DialogRecord_create(unsigned short id, char *dialog, int next_id)
 {
-    struct DialogRecord *record = malloc(sizeof(struct DialogRecord));
+    struct DialogRecord *record = calloc(1, sizeof(struct DialogRecord));
     check_mem(record);
 
     record->id = id;
@@ -43,18 +48,16 @@ void DialogRecord_destroy(struct DialogRecord *record)
 }
 
 void DialogTable_init(struct DialogTable *table) {
-    table->nextEmptyRow = 0;
-    table->maxOccupiedRow = 0;
+    struct DialogRecord *record = DialogRecord_default();
     for (int i = 0; i < MAX_ROWS_DIALOG; i++) {
-        table->rows[i].id = 0;
-        table->rows[i].next_id = 0;
-        table->rows[i].set = 0;
+        memcpy(&table->rows[i], record, sizeof(struct DialogRecord));
     }
+    free(record);
 }
 
 struct DialogTable *DialogTable_create()
 {
-    struct DialogTable *table = malloc(sizeof(struct DialogTable));
+    struct DialogTable *table = calloc(1, sizeof(struct DialogTable));
     check_mem(table);
 
     DialogTable_init(table);
@@ -74,56 +77,50 @@ void DialogTable_destroy(struct DialogTable *table)
     free(table);
 }
 
-unsigned short DialogTable_set(struct DialogTable *table, struct DialogRecord *record)
+static unsigned short findNextRowToFill(struct DialogTable *table)
 {
-    // See if we have a matching row
-    for (unsigned short i = 0; i < table->maxOccupiedRow; i++) {
-        if (table->rows[i].id == record->id) {
-            table->rows[i] = *record;
-            return i;
+    unsigned short idx = 0;
+    for (int i = 0; i < MAX_ROWS_DIALOG; i++) {
+        if (table->rows[i].id == 0) {
+            idx = i;
+            break;
+        }
+    }
+    if (idx == 0) {
+        // No empty rows, so find oldest and overwrite
+        int min_id = 65535;
+        for (int i = 0; i < MAX_ROWS_DIALOG; i++) {
+            if (table->rows[i].id < min_id) {
+                min_id = table->rows[i].id;
+                idx = i;
+            }
+        }
+    }
+    return idx;
+}
+
+unsigned short DialogTable_newRow(struct DialogTable *table, struct DialogRecord *rec)
+{
+    unsigned short idx = findNextRowToFill(table);
+    memcpy(&table->rows[idx], rec, sizeof(struct DialogRecord));
+    return rec->id;
+}
+
+unsigned short DialogTable_update(struct DialogTable *table, struct DialogRecord *rec, unsigned short id)
+{
+    for (unsigned short i = 0; i < MAX_ROWS_DIALOG; ++i) {
+        if (table->rows[i].id == id) {
+            memcpy(&table->rows[i], rec, sizeof(struct DialogRecord));
+            return id;
         }
     }
 
-    // If no existing row with matching id, add new row
-    if (table->maxOccupiedRow < MAX_ROWS_DIALOG - 1) {
-        // Table is not full here
-        // Find where the row needs to go
-        // Is nextEmptyRow empty?
-        if (table->rows[table->nextEmptyRow].set == 0) {
-            table->rows[table->nextEmptyRow] = *record;
-            table->maxOccupiedRow = table->nextEmptyRow;
-            table->nextEmptyRow++;
-            return table->maxOccupiedRow;
-        } else {
-            // Find the next empty row
-            for (unsigned short i = 0; i < MAX_ROWS_DIALOG - 1; i++) {
-                if (table->rows[i].set == 0) {
-                    table->rows[i] = *record;
-                    table->maxOccupiedRow = i;
-                    table->nextEmptyRow = i + 1;
-                    return table->maxOccupiedRow;
-                }
-            }
-            // No empty row found
-            return -1; // This is a really unexpected scenario, so panic
-        }
-    } else {
-        // Table is full
-        unsigned char oldestRow = 0;
-        // The oldest row is the row with the lowest id
-        for (unsigned short i = 0; i < MAX_ROWS_DIALOG - 1; i++) {
-            if (table->rows[i].id < table->rows[oldestRow].id) {
-                oldestRow = i;
-            }
-        }
-        table->rows[oldestRow] = *record;
-        return oldestRow;
-    }
+    return DialogTable_newRow(table, rec);
 }
 
 struct DialogRecord *DialogTable_get(struct DialogTable *table, unsigned short id)
 {
-    for (int i = 0; i < table->maxOccupiedRow; i++) {
+    for (int i = 0; i < MAX_ROWS_DIALOG; i++) {
         if (table->rows[i].id == id) {
             return &table->rows[i];
         }
@@ -133,7 +130,7 @@ struct DialogRecord *DialogTable_get(struct DialogTable *table, unsigned short i
 
 void DialogTable_delete(struct DialogTable *table, unsigned short id)
 {
-    for (int i = 0; i < table->maxOccupiedRow; i++) {
+    for (int i = 0; i < MAX_ROWS_DIALOG; i++) {
         if (table->rows[i].id == id) {
             table->rows[i].set = 0;
             return;
@@ -143,7 +140,7 @@ void DialogTable_delete(struct DialogTable *table, unsigned short id)
 
 void DialogTable_print(struct DialogTable *table)
 {
-    for (int i = 0; i < table->maxOccupiedRow; i++) {
+    for (int i = 0; i < MAX_ROWS_DIALOG; i++) {
         if (table->rows[i].set == 1) {
             printf("ID: %d\n", table->rows[i].id);
             printf("Text: %s\n", table->rows[i].text);

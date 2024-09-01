@@ -32,8 +32,6 @@ struct ItemRecord *ItemRecord_create(unsigned short id, char *name, unsigned sho
 void ItemRecord_destroy(struct ItemRecord *ir);
 
 struct ItemTable {
-    unsigned short nextEmptyRow;
-    unsigned short maxOccupiedRow;
     struct ItemRecord rows[MAX_ROWS_ITEMS];
 };
 
@@ -44,5 +42,6 @@ struct ItemRecord *ItemTable_get(struct ItemTable *it, unsigned short index);
 struct ItemRecord *ItemTable_getByName(struct ItemTable *it, char *name);
 unsigned short ItemTable_newRow(struct ItemTable *it, struct ItemRecord *record);
 unsigned short ItemTable_update(struct ItemTable *it, struct ItemRecord *record);
+void ItemTable_delete(struct ItemTable *it, unsigned short index);
 void ItemTable_print(struct ItemTable *it);
 void ItemTable_printRow(struct ItemTable *it, int index);

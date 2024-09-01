@@ -28,6 +28,8 @@ struct Inventory {
 struct Inventory *Inventory_create();
 void Inventory_destroy(struct Inventory *inventory);
 
+struct Inventory *Inventory_clone(struct Inventory *source);
+
 int Inventory_addItem(struct Inventory *inventory, struct Item *item);
 int Inventory_removeItem(struct Inventory *inventory, struct Item *item);
 int Inventory_hasItem(struct Inventory *inventory, struct Item *item);

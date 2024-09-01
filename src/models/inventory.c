@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 struct Inventory *Inventory_create()
 {
-    struct Inventory *inventory = malloc(sizeof(struct Inventory));
+    struct Inventory *inventory = calloc(1, sizeof(struct Inventory));
     check_mem(inventory);
 
     for (int i = 0; i < MAX_INVENTORY_ITEMS; i++) {
@@ -38,6 +38,23 @@ error:
     return NULL;
 }
 
+struct Inventory *Inventory_clone(struct Inventory *source)
+{
+    struct Inventory *inventory = Inventory_create();
+    check_mem(inventory);
+
+    for (int i = 0; i < MAX_INVENTORY_ITEMS; i++) {
+        if (source->items[i] != NULL) {
+            inventory->items[i] = Item_clone(source->items[i]);
+        }
+    }
+
+    return inventory;
+
+error:
+    return NULL;
+}
+
 void Inventory_destroy(struct Inventory *inventory)
 {
     for (int i = 0; i < MAX_INVENTORY_ITEMS; i++) {
@@ -45,15 +62,12 @@ void Inventory_destroy(struct Inventory *inventory)
             Item_destroy(inventory->items[i]);
         }
     }
+
     free(inventory);
 }
 
 int Inventory_addItem(struct Inventory *inventory, struct Item *item)
 {
-    if (Inventory_isFull(inventory)) {
-        return -1;
-    }
-
     for (int i = 0; i < MAX_INVENTORY_ITEMS; i++) {
         if (inventory->items[i] == NULL) {
             inventory->items[i] = item;
@@ -156,29 +170,20 @@ int Inventory_save(struct Database *db, int owner_id, struct Inventory *inventor
     struct InventoryRecord *record = NULL;
     struct CharacterStatsRecord *owner = Database_getCharacterStats(db, owner_id);
 
-    if (owner != NULL) {
-        record = Database_getInventoryByOwner(db, owner->name);
-        if (record == NULL) {
-            int id = Database_createInventory(db, owner->name);
-            check(id != -1, "Failed to create inventory record");
-            record = Database_getInventory(db, id);
-        }
+    check(owner != NULL, "Failed to get owner record");
+    record = Database_getInventoryByOwner(db, owner->name);
+    if (record == NULL) {
+        return Database_createInventory(db, owner->name);
     } else {
-        // Owner is probably being created, so just write anyway
-        record = malloc(sizeof(struct InventoryRecord));
-        check_mem(record);
-        record->owner_id = owner_id;
-    }
-
-    for (int i = 0; i < MAX_INVENTORY_ITEMS; i++) {
-        if (inventory->items[i] != NULL) {
-            record->item_ids[i] = Item_save(db, inventory->items[i]);
-        } else {
-            record->item_ids[i] = 0;
+        for (int i = 0; i < MAX_INVENTORY_ITEMS; ++i) {
+            if (inventory->items[i] != NULL) {
+                record->item_ids[i] = Item_save(db, inventory->items[i]);
+            } else {
+                record->item_ids[i] = 0;
+            }
         }
+        return Database_updateInventory(db, record, record->id);
     }
-
-    return Database_updateInventory(db, record, record->id);;
 
 error:
     return -1;

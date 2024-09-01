@@ -55,22 +55,53 @@ error:
     return NULL;
 }
 
+struct Character *Character_clone(struct Character *source)
+{
+    struct Character *character = Character_create(
+        source->name,
+        source->strength,
+        source->dexterity,
+        source->intelligence,
+        source->wisdom,
+        source->charisma,
+        source->funkiness
+    );
+    check(character, "Failed to clone character");
+
+    character->level = source->level;
+    character->experience = source->experience;
+    character->health = source->health;
+    character->max_health = source->max_health;
+    character->mana = source->mana;
+    character->max_mana = source->max_mana;
+
+    // The clone inherits the source's inventory
+    character->inventory = Inventory_clone(source->inventory);
+
+    return character;
+
+error:
+    return NULL;
+}
+
 void Character_destroy(struct Character *character)
 {
     if (character) {
-        Inventory_destroy(character->inventory);
+        if (character->inventory) {
+            Inventory_destroy(character->inventory);
+        }
         free(character);
     }
+
+    character = NULL;
 }
 
 void Character_save(struct Database *db, struct Character *character)
 {
     int character_id = -1;
     struct CharacterStatsRecord *existing = Database_getCharacterStatsByName(db, character->name);
-    if (existing != NULL) {
-        character_id = Database_updateCharacterStats(db, existing, existing->id);
-        check(character_id != -1, "Failed to update character record");
-    } else {
+    if (existing == NULL) {
+        // Create
         struct CharacterStatsRecord *record = CharacterStatsRecord_create(
             character->name,
             character->level,
@@ -86,10 +117,22 @@ void Character_save(struct Database *db, struct Character *character)
             character->charisma,
             character->funkiness
         );
-        check(record, "Failed to create character record");
-
         character_id = Database_createCharacterStats(db, record);
-        check(character_id != -1, "Failed to create character record");
+        free(record);
+    } else {
+        // Update
+        existing->level = character->level;
+        existing->experience = character->experience;
+        existing->health_and_mana = character->health;
+        existing->max_health_and_mana = character->max_health;
+        existing->stats = SET_STAT(existing->stats, STRENGTH, character->strength);
+        existing->stats = SET_STAT(existing->stats, DEXTERITY, character->dexterity);
+        existing->stats = SET_STAT(existing->stats, INTELLIGENCE, character->intelligence);
+        existing->stats = SET_STAT(existing->stats, WISDOM, character->wisdom);
+        existing->stats = SET_STAT(existing->stats, CHARISMA, character->charisma);
+        existing->stats = SET_STAT(existing->stats, FUNKINESS, character->funkiness);
+
+        character_id = Database_updateCharacterStats(db, existing, existing->id);
     }
 
     // Save inventory
@@ -124,9 +167,9 @@ struct Character *Character_load(struct Database *db, char *name)
     character->mana = record->health_and_mana;
     character->max_mana = record->max_health_and_mana;
 
-    // Load inventory
+    // They get an inventory during creation, so destroy it
+    Inventory_destroy(character->inventory);
     character->inventory = Inventory_load(db, record->id);
-    check(character->inventory, "Failed to load inventory");
 
     return character;
 

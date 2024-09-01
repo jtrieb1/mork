@@ -43,12 +43,9 @@ static unsigned short findNextRowToFill(struct CharacterStatsTable *table)
 }
 
 struct CharacterStatsRecord *CharacterStatsRecord_default() {
-    struct CharacterStatsRecord *record = (struct CharacterStatsRecord *)malloc(sizeof(struct CharacterStatsRecord));
-    check_mem(record);
-    return record;
-
-error:
-    return NULL;
+    return CharacterStatsRecord_create(
+        "", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    );
 }
 
 struct CharacterStatsRecord *CharacterStatsRecord_create(
@@ -66,7 +63,7 @@ struct CharacterStatsRecord *CharacterStatsRecord_create(
     unsigned int wisdom,
     unsigned int funkiness
 ) {
-    struct CharacterStatsRecord *record = (struct CharacterStatsRecord *)malloc(sizeof(struct CharacterStatsRecord));
+    struct CharacterStatsRecord *record = (struct CharacterStatsRecord *)calloc(1, sizeof(struct CharacterStatsRecord));
     check_mem(record);
     record->id = 0;
     record->set = 0;
@@ -112,7 +109,7 @@ void CharacterStatsRecord_print(struct CharacterStatsRecord *record) {
 }
 
 struct CharacterStatsTable *CharacterStatsTable_create() {
-    struct CharacterStatsTable *table = (struct CharacterStatsTable *)malloc(sizeof(struct CharacterStatsTable));
+    struct CharacterStatsTable *table = (struct CharacterStatsTable *)calloc(1, sizeof(struct CharacterStatsTable));
     check_mem(table);
     CharacterStatsTable_init(table);
     return table;
@@ -122,24 +119,25 @@ error:
 }
 
 void CharacterStatsTable_init(struct CharacterStatsTable *table) {
+    struct CharacterStatsRecord *record = CharacterStatsRecord_default();
     for (int i = 0; i < MAX_ROWS_CS; i++) {
-        table->rows[i].id = 0;
-        table->rows[i].set = 0;
+        memcpy(&table->rows[i], record, sizeof(struct CharacterStatsRecord));
     }
+    free(record);
 }
 
 unsigned char CharacterStatsTable_newRow(struct CharacterStatsTable *table, struct CharacterStatsRecord *record)
 {
     unsigned short idx = findNextRowToFill(table);
-    table->rows[idx] = *record;
-    return record->id;
+    memcpy(&table->rows[idx], record, sizeof(struct CharacterStatsRecord));
+    return table->rows[idx].id;
 }
 
 unsigned char CharacterStatsTable_update(struct CharacterStatsTable *table, struct CharacterStatsRecord *record, int id)
 {
     for (int i = 0; i < MAX_ROWS_CS; i++) {
         if (table->rows[i].id == id) {
-            table->rows[i] = *record;
+            memcpy(&table->rows[i], record, sizeof(struct CharacterStatsRecord));
             return id;
         }
     }
@@ -161,7 +159,6 @@ struct CharacterStatsRecord *CharacterStatsTable_getByName(struct CharacterStats
             return &table->rows[i];
         }
     }
-    log_err("CharacterStatsTable_getByName: Name not found (%s)", name);
     return NULL;
 }
 

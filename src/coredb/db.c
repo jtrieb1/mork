@@ -160,7 +160,7 @@ void Database_flush(struct Database *db)
 
 struct Database *Database_create()
 {
-    struct Database *db = malloc(sizeof(struct Database));
+    struct Database *db = calloc(1, sizeof(struct Database));
     check_mem(db);
 
     db->file = NULL;
@@ -190,23 +190,23 @@ void Database_destroy(struct Database *db)
         switch (tbl) {
             case CHARACTER_STATS:
                 if (db->tables[tbl] ==  NULL) break;
-                CharacterStatsTable_destroy(db->tables[tbl]);
+                CharacterStatsTable_destroy((struct CharacterStatsTable *)db->tables[tbl]);
                 break;
             case DESCRIPTION:
                 if (db->tables[tbl] == NULL) break;
-                DescriptionTable_destroy(db->tables[tbl]);
+                DescriptionTable_destroy((struct DescriptionTable *)db->tables[tbl]);
                 break;
             case DIALOG:
                 if (db->tables[tbl] == NULL) break;
-                DialogTable_destroy(db->tables[tbl]);
+                DialogTable_destroy((struct DialogTable *)db->tables[tbl]);
                 break;
             case INVENTORY:
                 if (db->tables[tbl] == NULL) break;
-                InventoryTable_destroy(db->tables[tbl]);
+                InventoryTable_destroy((struct InventoryTable *)db->tables[tbl]);
                 break;
             case ITEMS:
                 if (db->tables[tbl] == NULL) break;
-                ItemTable_destroy(db->tables[tbl]);
+                ItemTable_destroy((struct ItemTable *)db->tables[tbl]);
                 break;
             default:
                 sentinel("Unknown table: %d", tbl);
@@ -254,7 +254,7 @@ error:
     return;
 }
 
-unsigned int Database_getNextID(struct Database *db, enum Table table)
+unsigned int Database_getNextIndex(struct Database *db, enum Table table)
 {
     check(db != NULL, "Database is NULL");
     check(table >= 0 && table < MAX_TABLES, "Invalid table: %d", table);
@@ -297,7 +297,7 @@ int Database_createCharacterStats(struct Database *db, struct CharacterStatsReco
     struct CharacterStatsTable *table = db->tables[CHARACTER_STATS];
     check(table != NULL, "Character stats table is not initialized.");
 
-    stats->id = Database_getNextID(db, CHARACTER_STATS);
+    stats->id = Database_getNextIndex(db, CHARACTER_STATS);
     unsigned char idx = CharacterStatsTable_newRow(table, stats);
     return (int)idx;
 
@@ -333,17 +333,29 @@ error:
     return NULL;
 }
 
-int Database_setDialog(struct Database *db, struct DialogRecord *dialog)
+int Database_createDialog(struct Database *db, struct DialogRecord *dialog)
 {
-    // This method takes ownership of the dialog record, so it must be freed here
-    check(db != NULL, "Expected a non-null database.")
+    check(db != NULL, "Expected a non-null database.");
 
     struct DialogTable *table = db->tables[DIALOG];
-    check(table != NULL, "Dialog table is not initialized.");
+    check(table != NULL, "Dialog table is not initialized");
 
-    unsigned short idx = DialogTable_set(table, dialog);
-    DialogRecord_destroy(dialog);
-    return (int)idx;
+    unsigned short id = DialogTable_newRow(table, dialog); // newRow takes ownership of dialog
+    return (int)id;
+
+error:
+    return -1;
+}
+
+int Database_updateDialog(struct Database *db, struct DialogRecord *dialog, int id)
+{
+    check(db != NULL, "Expected a non-null database.");
+
+    struct DialogTable *table = db->tables[DIALOG];
+    check(table != NULL, "Dialog table is not initialized");
+
+    check(DialogTable_update(table, dialog, id) == id, "Update returned new ID"); // update takes ownership of dialog
+    return id;
 
 error:
     return -1;
@@ -375,13 +387,16 @@ error:
     return NULL;
 }
 
+
 struct ItemRecord *Database_getOrCreateItem(struct Database *db, char *name)
 {
     struct ItemRecord *item = Database_getItemByName(db, name);
     if (item == NULL) {
-        int id = Database_getNextID(db, ITEMS);
+        int id = Database_getNextIndex(db, ITEMS);
         item = ItemRecord_create(id, name, 0);
         Database_createItem(db, item);
+        free(item);
+        item = Database_getItem(db, id);
     }
     return item;
 }
@@ -393,7 +408,7 @@ int Database_createItem(struct Database *db, struct ItemRecord *item)
     struct ItemTable *table = db->tables[ITEMS];
     check(table != NULL, "Item table is not initialized.");
 
-    item->id = Database_getNextID(db, ITEMS);
+    item->id = Database_getNextIndex(db, ITEMS);
     unsigned short idx = ItemTable_newRow(table, item);
     return (int)idx;
 
@@ -451,9 +466,10 @@ struct DescriptionRecord *Database_getOrCreateDescription(struct Database *db, c
 
     struct DescriptionRecord *desc = DescriptionTable_get_by_prefix(table, prefix);
     if (desc == NULL) {
-        desc = DescriptionRecord_create(Database_getNextID(db, DESCRIPTION), prefix, 0);
-        unsigned short idx = DescriptionTable_insert(table, desc);
-        desc->id = idx;
+        desc = DescriptionRecord_create(Database_getNextIndex(db, DESCRIPTION), prefix, 0);
+        int idx = Database_createDescription(db, desc);
+        free(desc);
+        desc = DescriptionTable_get(table, idx);
     }
 
     return desc;
@@ -462,20 +478,47 @@ error:
     return NULL;
 }
 
-int Database_setDescription(struct Database *db, struct DescriptionRecord *desc)
+int Database_createDescription(struct Database *db, struct DescriptionRecord *desc)
 {
     check(db != NULL, "Expected a non-null database.");
 
     struct DescriptionTable *table = db->tables[DESCRIPTION];
     check(table != NULL, "Description table is not initialized.");
 
-    unsigned short id = desc->id != 0 ? desc->id : Database_getNextID(db, DESCRIPTION);
-
-    unsigned short idx = DescriptionTable_update(table, desc, id);
+    desc->id = Database_getNextIndex(db, DESCRIPTION);
+    unsigned short idx = DescriptionTable_insert(table, desc);
     return (int)idx;
 
 error:
     return -1;
+}
+
+int Database_updateDescription(struct Database *db, struct DescriptionRecord *desc, int id)
+{
+    check(db != NULL, "Expected a non-null database.");
+
+    struct DescriptionTable *table = db->tables[DESCRIPTION];
+    check(table != NULL, "Description table is not initialized.");
+
+    desc->id = id;
+    DescriptionTable_update(table, desc, id);
+    return id;
+
+error:
+    return -1;
+}
+
+void Database_deleteDescription(struct Database *db, int id)
+{
+    check(db != NULL, "Expected a non-null database.");
+
+    struct DescriptionTable *table = db->tables[DESCRIPTION];
+    check(table != NULL, "Description table is not initialized.");
+
+    DescriptionTable_delete(table, id);
+
+error:
+    return;
 }
 
 struct InventoryRecord *Database_getInventory(struct Database *db, int id)
@@ -517,7 +560,7 @@ int Database_createInventory(struct Database *db, char *owner)
     struct CharacterStatsRecord *owner_record = Database_getCharacterStatsByName(db, owner);
     check(owner_record != NULL, "Character stats record not found.");
 
-    unsigned short idx = InventoryTable_add(table, owner_record->id, Database_getNextID(db, INVENTORY));
+    unsigned short idx = InventoryTable_add(table, owner_record->id, Database_getNextIndex(db, INVENTORY));
     return (int)idx;
 
 error:
@@ -532,7 +575,7 @@ int Database_updateInventory(struct Database *db, struct InventoryRecord *record
     check(table != NULL, "Inventory table is not initialized.");
 
     record->id = id;
-    InventoryTable_update(table, record, id);
+    id = InventoryTable_update(table, record, id);
     return id;
 
 error:
@@ -559,4 +602,17 @@ struct ItemRecord **Database_getItemsInInventory(struct Database *db, char *owne
 
 error:
     return NULL;
+}
+
+void Database_deleteItem(struct Database *db, int id)
+{
+    check(db != NULL, "Expected a non-null database.");
+
+    struct ItemTable *table = db->tables[ITEMS];
+    check(table != NULL, "Item table is not initialized.");
+
+    ItemTable_delete(table, id);
+
+error:
+    return;
 }

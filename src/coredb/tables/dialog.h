@@ -33,15 +33,15 @@ struct DialogRecord *DialogRecord_create(unsigned short id, char *dialog, int ne
 void DialogRecord_destroy(struct DialogRecord *record);
 
 struct DialogTable {
-    unsigned short nextEmptyRow;
-    unsigned short maxOccupiedRow;
     struct DialogRecord rows[MAX_ROWS_DIALOG]; // Total size on disk is 512 * 65535 = 33,553,920 bytes. A bit excessive for Zork, but this is Mork
 };
 
 struct DialogTable *DialogTable_create();
 void DialogTable_init(struct DialogTable *table);
 void DialogTable_destroy(struct DialogTable *table);
-unsigned short DialogTable_set(struct DialogTable *table, struct DialogRecord *record);
+
 struct DialogRecord *DialogTable_get(struct DialogTable *table, unsigned short id);
+unsigned short DialogTable_newRow(struct DialogTable *table, struct DialogRecord *rec);
+unsigned short DialogTable_update(struct DialogTable *table, struct DialogRecord *rec, unsigned short id);
 void DialogTable_delete(struct DialogTable *table, unsigned short id);
 void DialogTable_print(struct DialogTable *table);

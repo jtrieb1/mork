@@ -56,7 +56,7 @@ void Database_write(struct Database *db, enum Table table);
 void Database_delete(struct Database *db, enum Table table, int id);
 void Database_print(struct Database *db, enum Table table);
 
-unsigned int Database_getTableIndexCounter(struct Database *db, enum Table table);
+unsigned int Database_getNextIndex(struct Database *db, enum Table table);
 
 // Record-level ops (setters return index of record in table)
 struct CharacterStatsRecord *Database_getCharacterStats(struct Database *db, int id);

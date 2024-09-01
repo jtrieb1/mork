@@ -84,7 +84,7 @@ enum Stats {
 #define GET_MANA(health_and_mana) ((health_and_mana >> 16) & 0xFFFF)
 #define SET_HEALTH_AND_MANA(health, mana) ((health & 0xFFFF) | ((mana & 0xFFFF) << 16))
 
-struct CharacterStatsRecord *CharacterStatsRecord_default();
+struct CharacterStatsRecord* CharacterStatsRecord_default();
 void CharacterStatsRecord_init(struct CharacterStatsRecord *rec);
 struct CharacterStatsRecord *CharacterStatsRecord_create(
     const char *name,

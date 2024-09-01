@@ -24,8 +24,11 @@ struct Item {
     char name[MAX_NAME], description[MAX_DESCRIPTION];
 };
 
-struct Item* Item_create(const char* name, const char* description);
+struct Item *Item_create(const char* name, const char* description);
 void Item_destroy(struct Item* item);
 
+struct Item *Item_clone(struct Item *source);
+
 int Item_save(struct Database* db, struct Item* item);
-struct Item* Item_load(struct Database* db, int id);
+struct Item *Item_load(struct Database* db, int id);
+struct Item *Item_loadByName(struct Database* db, char* name);

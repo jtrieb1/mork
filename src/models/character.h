@@ -42,5 +42,7 @@ struct Character {
 struct Character *Character_create(const char *name, unsigned short strength, unsigned short dexterity, unsigned short intelligence, unsigned short wisdom, unsigned short charisma, unsigned short funkiness);
 void Character_destroy(struct Character *character);
 
+struct Character *Character_clone(struct Character *source);
+
 void Character_save(struct Database *db, struct Character *character);
 struct Character *Character_load(struct Database *db, char *name);

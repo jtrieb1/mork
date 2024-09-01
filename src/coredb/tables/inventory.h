@@ -37,8 +37,6 @@ unsigned short InventoryRecord_getID(struct InventoryRecord* record);
 unsigned short InventoryRecord_getOwnerID(struct InventoryRecord* record);
 
 struct InventoryTable {
-    unsigned short nextEmptyRow;
-    unsigned short maxOccupiedRow;
     struct InventoryRecord rows[MAX_ROWS_INVENTORIES];
 };
 

@@ -22,9 +22,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <lcthw/dbg.h>
 #include <stdlib.h>
 
+struct DescriptionRecord *DescriptionRecord_default()
+{
+    return DescriptionRecord_create(0, "", 0);
+}
+
 struct DescriptionRecord *DescriptionRecord_create(unsigned short id, char *description, int next_id)
 {
-    struct DescriptionRecord *entry = malloc(sizeof(struct DescriptionRecord));
+    struct DescriptionRecord *entry = calloc(1, sizeof(struct DescriptionRecord));
     check_mem(entry);
 
     entry->id = id;
@@ -41,19 +46,21 @@ error:
 void DescriptionRecord_destroy(struct DescriptionRecord *entry)
 {
     free(entry);
+    entry = NULL;
 }
 
 void DescriptionTable_init(struct DescriptionTable *table) {
+    struct DescriptionRecord *record = DescriptionRecord_default();
     for (int i = 0; i < MAX_ROWS_DESC; i++) {
-        table->rows[i].id = 0;
-        table->rows[i].next_id = 0;
-        table->rows[i].set = 0;
+        memcpy(&table->rows[i], record, sizeof(struct DescriptionRecord));
     }
+    free(record);
+    record = NULL;
 }
 
 struct DescriptionTable *DescriptionTable_create()
 {
-    struct DescriptionTable *table = malloc(sizeof(struct DescriptionTable));
+    struct DescriptionTable *table = calloc(1, sizeof(struct DescriptionTable));
     check_mem(table);
 
     DescriptionTable_init(table);
@@ -65,11 +72,6 @@ error:
 
 void DescriptionTable_destroy(struct DescriptionTable *table)
 {
-    for (int i = 0; i < MAX_ROWS_DESC; i++) {
-        if (table->rows[i].set == 1) {
-            DescriptionRecord_destroy(&table->rows[i]);
-        }
-    }
     free(table);
 }
 
@@ -98,7 +100,7 @@ static unsigned short findNextRowToFill(struct DescriptionTable *table)
 unsigned short DescriptionTable_insert(struct DescriptionTable *table, struct DescriptionRecord *record)
 {
     unsigned short idx = findNextRowToFill(table);
-    table->rows[idx] = *record;
+    memcpy(&table->rows[idx], record, sizeof(struct DescriptionRecord));
     table->rows[idx].set = 1;
     return table->rows[idx].id;
 }
@@ -107,7 +109,7 @@ unsigned short DescriptionTable_update(struct DescriptionTable *table, struct De
 {
     for (int i = 0; i < MAX_ROWS_DESC; i++) {
         if (table->rows[i].id == id) {
-            table->rows[i] = *record;
+            memcpy(&table->rows[i], record, sizeof(struct DescriptionRecord));
             table->rows[i].set = 1;
             return table->rows[i].id;
         }
@@ -118,12 +120,17 @@ unsigned short DescriptionTable_update(struct DescriptionTable *table, struct De
 
 struct DescriptionRecord *DescriptionTable_get(struct DescriptionTable *table, unsigned short id)
 {
-    for (int i = 0; i < MAX_ROWS_DESC; i++) {
-        if (table->rows[i].id == id) {
-            return &table->rows[i];
+    check(id > 0, "ID is not set");
+    check(table != NULL, "Table is NULL");
+
+    for (unsigned short i = 0; i < MAX_ROWS_DESC; i++) {
+        struct DescriptionRecord *rec = &table->rows[i];
+        if (rec->id == id) {
+            return rec;
         }
     }
 
+error:
     return NULL;
 }
 

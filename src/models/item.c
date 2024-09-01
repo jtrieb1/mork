@@ -16,6 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "../coredb/db.h"
 #include "item.h"
 
 #include <lcthw/dbg.h>
@@ -38,24 +39,78 @@ error:
     return NULL;
 }
 
+struct Item *Item_clone(struct Item *source)
+{
+    return Item_create(source->name, source->description);
+}
+
 void Item_destroy(struct Item *item)
 {
-    free(item);
+    if (item != NULL) free(item);
+    item = NULL;
 }
 
 int Item_save(struct Database *db, struct Item *item)
 {
-    struct ItemRecord *record = Database_getOrCreateItem(db, item->name);
-    struct DescriptionRecord *description = Database_getOrCreateDescription(db, item->description);
+    // Try to find description record
+    int description_id = -1;
+    struct DescriptionRecord *descriptionRecord = Database_getDescriptionByPrefix(db, item->description);
+    if (descriptionRecord == NULL) {
+        // Description does not exist in DB, create it.
+        descriptionRecord = DescriptionRecord_create(Database_getNextIndex(db, DESCRIPTION), item->description, 0);
+        check(descriptionRecord != NULL, "Failed to create description record.");
+        description_id = Database_createDescription(db, descriptionRecord);
+        free(descriptionRecord);
+    } else {
+        description_id = descriptionRecord->id;
+    }
 
-    record->description_id = description->id;
+    struct ItemRecord *itemRecord = Database_getItemByName(db, item->name);
+    if (itemRecord == NULL) {
+        // Item does not exist in DB, create it.
+        itemRecord = ItemRecord_create(Database_getNextIndex(db, ITEMS), item->name, description_id);
+        check(itemRecord != NULL, "Failed to create item record.");
+        int id = Database_createItem(db, itemRecord);
+        free(itemRecord);
+        return id;
+    } else {
+        // Item exists in DB, update it.
+        if (itemRecord->description_id != description_id) {
+            itemRecord->description_id = description_id;
+            return Database_updateItem(db, itemRecord, itemRecord->id);
+        } else {
+            return itemRecord->id;
+        }
+    }
 
-    return Database_updateItem(db, record, record->id);
+error:
+    if (itemRecord) {
+        Database_deleteItem(db, itemRecord->id);
+    }
+    if (descriptionRecord) {
+        Database_deleteDescription(db, descriptionRecord->id);
+    }
+    return -1;
 }
 
 struct Item* Item_load(struct Database* db, int id)
 {
     struct ItemRecord *record = Database_getItem(db, id);
+    check(record != NULL, "Failed to load item.");
+
+    struct DescriptionRecord *description = Database_getDescription(db, record->description_id);
+    check(description != NULL, "Failed to load description.");
+
+    struct Item *item = Item_create(record->name, description->description);
+    return item;
+
+error:
+    return NULL;
+}
+
+struct Item *Item_loadByName(struct Database *db, char *name)
+{
+    struct ItemRecord *record = Database_getItemByName(db, name);
     check(record != NULL, "Failed to load item.");
 
     struct DescriptionRecord *description = Database_getDescription(db, record->description_id);

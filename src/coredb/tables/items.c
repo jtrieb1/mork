@@ -21,9 +21,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <lcthw/dbg.h>
 #include <stdlib.h>
 
+struct ItemRecord *ItemRecord_default()
+{
+    return ItemRecord_create(0, "Empty", 0);
+}
+
 struct ItemRecord *ItemRecord_create(unsigned short id, char *name, unsigned short description_id)
 {
-    struct ItemRecord *record = malloc(sizeof(struct ItemRecord));
+    struct ItemRecord *record = calloc(1, sizeof(struct ItemRecord));
     check_mem(record);
 
     record->id = id;
@@ -44,18 +49,16 @@ void ItemRecord_destroy(struct ItemRecord *record)
 }
 
 void ItemTable_init(struct ItemTable *table) {
-    table->nextEmptyRow = 0;
-    table->maxOccupiedRow = 0;
+    struct ItemRecord *record = ItemRecord_default();
     for (int i = 0; i < MAX_ROWS_ITEMS; i++) {
-        table->rows[i].id = 0;
-        table->rows[i].description_id = 0;
-        table->rows[i].set = 0;
+        memcpy(&table->rows[i], record, sizeof(struct ItemRecord));
     }
+    free(record);
 }
 
 struct ItemTable *ItemTable_create()
 {
-    struct ItemTable *table = malloc(sizeof(struct ItemTable));
+    struct ItemTable *table = calloc(1, sizeof(struct ItemTable));
     check_mem(table);
 
     ItemTable_init(table);
@@ -67,11 +70,6 @@ error:
 
 void ItemTable_destroy(struct ItemTable *table)
 {
-    for (int i = 0; i < MAX_ROWS_ITEMS; i++) {
-        if (table->rows[i].set == 1) {
-            ItemRecord_destroy(&table->rows[i]);
-        }
-    }
     free(table);
 }
 
@@ -100,15 +98,15 @@ static unsigned short findNextRowToFill(struct ItemTable *table)
 unsigned short ItemTable_newRow(struct ItemTable *it, struct ItemRecord *record)
 {
     unsigned short idx = findNextRowToFill(it);
-    it->rows[idx] = *record;
-    return record->id;
+    memcpy(&it->rows[idx], record, sizeof(struct ItemRecord));
+    return it->rows[idx].id;
 }
 
 unsigned short ItemTable_update(struct ItemTable *it, struct ItemRecord *record)
 {
     for (unsigned short i = 0; i < MAX_ROWS_ITEMS; i++) {
         if (it->rows[i].id == record->id) {
-            it->rows[i] = *record;
+            memcpy(&it->rows[i], record, sizeof(struct ItemRecord));
             return it->rows[i].id;
         }
     }

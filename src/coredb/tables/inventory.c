@@ -21,9 +21,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <lcthw/dbg.h>
 #include <stdlib.h>
 
+struct InventoryRecord *InventoryRecord_default()
+{
+    return InventoryRecord_create(0, 0);
+}
+
 struct InventoryRecord* InventoryRecord_create(unsigned short id, unsigned short owner_id)
 {
-    struct InventoryRecord* record = malloc(sizeof(struct InventoryRecord));
+    struct InventoryRecord* record = calloc(1, sizeof(struct InventoryRecord));
     check_mem(record);
 
     record->id = id;
@@ -91,20 +96,16 @@ unsigned short InventoryRecord_getOwnerID(struct InventoryRecord* record)
 
 void InventoryTable_init(struct InventoryTable* table)
 {
-    table->nextEmptyRow = 0;
-    table->maxOccupiedRow = 0;
+    struct InventoryRecord *record = InventoryRecord_default();
     for (int i = 0; i < MAX_ROWS_INVENTORIES; i++) {
-        table->rows[i].id = 0;
-        table->rows[i].owner_id = 0;
-        for (int j = 0; j < MAX_INVENTORY_ITEMS; j++) {
-            table->rows[i].item_ids[j] = 0;
-        }
+        memcpy(&table->rows[i], record, sizeof(struct InventoryRecord));
     }
+    free(record);
 }
 
 struct InventoryTable* InventoryTable_create()
 {
-    struct InventoryTable* table = malloc(sizeof(struct InventoryTable));
+    struct InventoryTable* table = calloc(1, sizeof(struct InventoryTable));
     check_mem(table);
 
     InventoryTable_init(table);
@@ -116,11 +117,6 @@ error:
 
 void InventoryTable_destroy(struct InventoryTable* table)
 {
-    for (int i = 0; i < MAX_ROWS_INVENTORIES; i++) {
-        if (table->rows[i].id != 0) {
-            InventoryRecord_destroy(&table->rows[i]);
-        }
-    }
     free(table);
 }
 
@@ -164,7 +160,7 @@ unsigned short InventoryTable_update(struct InventoryTable *table, struct Invent
 {
     for (int i = 0; i < MAX_ROWS_INVENTORIES; i++) {
         if (table->rows[i].id == id) {
-            table->rows[i] = *record;
+            memcpy(&table->rows[i], record, sizeof(struct InventoryRecord));
             return id;
         }
     }

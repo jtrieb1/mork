@@ -26,6 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "src/coredb/db.h"
 #include "src/models/character.h"
 #include "src/ui/terminal.h"
+#include <sys/types.h>
 
 char *title = ""
 "_______  _______  _______  _\n"
@@ -64,19 +65,36 @@ struct Character *player = NULL;
 // NPC characters
 struct Character *mork = NULL;
 struct Character *mindy = NULL;
-struct Character *alf = NULL;
-struct Character *urkel = NULL;
+struct Character *frank = NULL;
+struct Character *earl = NULL;
 
 // Locations
 struct Location *start = NULL;
+struct Location *mnms = NULL;
+struct Location *diner = NULL;
+struct Location *forest = NULL;
+struct Location *pool = NULL;
+struct Location *spaceship = NULL;
+struct Location *ork = NULL;
 
 void initialize_characters()
 {
     player = Character_create("You", 1, (unsigned char[6]){3,3,3,3,3,1}, 6);
     mork = Character_load(game_db, "Mork");
     mindy = Character_load(game_db, "Mindy");
-    alf = Character_load(game_db, "Alf");
-    urkel = Character_load(game_db, "Urkel");
+    frank= Character_load(game_db, "Frank");
+    earl = Character_load(game_db, "Earl");
+}
+
+void initialize_locations()
+{
+    start = Location_create("Your Apartment", "A small apartment mostly full of boxes");
+    mnms = Location_create("Mork and Mindy's Apt.", "A small place shared by Mork and Mindy");
+    diner = Location_create("The Diner", "A small diner with a jukebox");
+    forest = Location_create("The Forest", "A dark and spooky forest");
+    pool = Location_create("The Pool", "A cool aboveground pool");
+    spaceship = Location_create("The Spaceship", "A spaceship with a lot of buttons");
+    ork = Location_create("Ork", "The planet Ork, home of Mork");
 }
 
 void trash_characters()
@@ -84,8 +102,18 @@ void trash_characters()
     Character_destroy(player);
     Character_destroy(mork);
     Character_destroy(mindy);
-    Character_destroy(alf);
-    Character_destroy(urkel);
+    Character_destroy(frank);
+    Character_destroy(earl);
+}
+
+void trash_locations()
+{
+    Location_destroy(start);
+    Location_destroy(diner);
+    Location_destroy(forest);
+    Location_destroy(pool);
+    Location_destroy(spaceship);
+    Location_destroy(ork);
 }
 
 void set_title_text_format()
@@ -128,6 +156,7 @@ void setup()
     check(game_db, "Could not open Mork database");
 
     initialize_characters();
+    initialize_locations();
 
     clear_screen();
 
@@ -137,9 +166,6 @@ void setup()
 
     set_normal_text_format();
     printf("%s\n", intro_text);
-
-    start = Location_create("Mork and Mindy's House", "A small place shared by Mork and Mindy");
-    check(start != NULL, "Could not create starting location");
 
     free(full_path);
     return;
@@ -162,9 +188,8 @@ void refresh()
 void cleanup()
 {
     trash_characters();
-    if (start != NULL) {
-        Location_destroy(start);
-    }
+    trash_locations();
+    
     if (game_db != NULL) {
         Database_destroy(game_db);
     }

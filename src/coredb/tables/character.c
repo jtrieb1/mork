@@ -17,37 +17,42 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "character.h"
+#include "row.h"
 
 #include <lcthw/dbg.h>
 
-static unsigned short findNextRowToFill(struct CharacterTable *table)
-{
-    unsigned short idx = 0;
-    for (int i = 0; i < MAX_ROWS_CS; i++) {
-        if (table->rows[i].id == 0) {
-            idx = i;
-            break;
-        }
-    }
-    if (idx == 0) {
-        // No empty rows, so find oldest and overwrite
-        int min_id = 65535;
-        for (int i = 0; i < MAX_ROWS_CS; i++) {
-            if (table->rows[i].id < min_id) {
-                min_id = table->rows[i].id;
-                idx = i;
-            }
-        }
-    }
-    return idx;
-}
+/**
+ * @brief Calculates the index of the next row to fill in the table. If no empty rows are found, the
+ *        index of the row with the lowest ID is chosen.
+ * 
+ * @param table 
+ * @return unsigned short The index of the next row to fill
+ */
 
+/**
+ * @brief Quick and dirty way to create a default character record.
+ * 
+ * @return struct CharacterRecord* 
+ */
 struct CharacterRecord *CharacterRecord_default() {
     return CharacterRecord_create(
         "", 0, 0, 0, 0, 0, 0, 0
     );
 }
 
+/**
+ * @brief The preferred constructor for the CharacterRecord struct.
+ * 
+ * @param name        
+ * @param level 
+ * @param health 
+ * @param maxHealth 
+ * @param mana 
+ * @param maxMana 
+ * @param stats       An array of stats with length numStats
+ * @param numStats    The length of the stats array
+ * @return struct CharacterRecord* 
+ */
 struct CharacterRecord *CharacterRecord_create(
     char *name,
     unsigned int level,
@@ -80,10 +85,20 @@ error:
     return NULL;
 }
 
+/**
+ * @brief The preferred destructor for the CharacterRecord struct.
+ * 
+ * @param record The record to destroy
+ */
 void CharacterRecord_destroy(struct CharacterRecord *record) {
     free(record);
 }
 
+/**
+ * @brief Print a character record to the console.
+ * 
+ * @param record The record to print
+ */
 void CharacterRecord_print(struct CharacterRecord *record) {
     printf("Character Stats Record\n");
     printf("ID: %d\n", record->id);
@@ -105,6 +120,11 @@ void CharacterRecord_print(struct CharacterRecord *record) {
     }
 }
 
+/**
+ * @brief The constructor for the CharacterTable struct.
+ * 
+ * @return struct CharacterTable* 
+ */
 struct CharacterTable *CharacterTable_create() {
     struct CharacterTable *table = (struct CharacterTable *)calloc(1, sizeof(struct CharacterTable));
     check_mem(table);
@@ -115,6 +135,11 @@ error:
     return NULL;
 }
 
+/**
+ * @brief Initialize a CharacterTable struct with default values.
+ * 
+ * @param table The table to initialize
+ */
 void CharacterTable_init(struct CharacterTable *table) {
     struct CharacterRecord *record = CharacterRecord_default();
     for (int i = 0; i < MAX_ROWS_CS; i++) {
@@ -123,13 +148,29 @@ void CharacterTable_init(struct CharacterTable *table) {
     free(record);
 }
 
+
+/**
+ * @brief Add a new row to the table. If the table is full, the row with the lowest ID will be overwritten.
+ * 
+ * @param table  The table to add the row to
+ * @param record The record to add
+ * @return unsigned char The ID of the new row
+ */
 unsigned char CharacterTable_newRow(struct CharacterTable *table, struct CharacterRecord *record)
 {
-    unsigned short idx = findNextRowToFill(table);
+    unsigned short idx = findNextRowToFill(table->rows, MAX_ROWS_CS);
     memcpy(&table->rows[idx], record, sizeof(struct CharacterRecord));
     return table->rows[idx].id;
 }
 
+/**
+ * @brief Update a row in the table. If the row does not exist, a new row will be created.
+ * 
+ * @param table  The table to update
+ * @param record The record to update
+ * @param id     The ID of the row to update
+ * @return unsigned char The ID of the updated row
+ */
 unsigned char CharacterTable_update(struct CharacterTable *table, struct CharacterRecord *record, int id)
 {
     for (int i = 0; i < MAX_ROWS_CS; i++) {
@@ -141,6 +182,13 @@ unsigned char CharacterTable_update(struct CharacterTable *table, struct Charact
     return CharacterTable_newRow(table, record);
 }
 
+/**
+ * @brief Get a CharacterRecord from the table by ID.
+ * 
+ * @param table The table to search
+ * @param id    The ID of the character to get
+ * @return struct CharacterRecord* 
+ */
 struct CharacterRecord *CharacterTable_get(struct CharacterTable *table, int id) {
     for (int i = 0; i < MAX_ROWS_CS; i++) {
         if (table->rows[i].id == id) {
@@ -150,6 +198,13 @@ struct CharacterRecord *CharacterTable_get(struct CharacterTable *table, int id)
     return NULL;
 }
 
+/**
+ * @brief Get a CharacterRecord from the table by name.
+ * 
+ * @param table The table to search
+ * @param name  The name of the character to get
+ * @return struct CharacterRecord* 
+ */
 struct CharacterRecord *CharacterTable_getByName(struct CharacterTable *table, char *name) {
     for (int i = 0; i < MAX_ROWS_CS; i++) {
         if (strcmp(table->rows[i].name, name) == 0) {
@@ -159,6 +214,12 @@ struct CharacterRecord *CharacterTable_getByName(struct CharacterTable *table, c
     return NULL;
 }
 
+/**
+ * @brief Delete a character from the table by ID.
+ * 
+ * @param table The table to delete from
+ * @param id    The ID of the character to delete
+ */
 void CharacterTable_delete(struct CharacterTable *table, int id) {
     for (int i = 0; i < MAX_ROWS_CS; i++) {
         if (table->rows[i].id == id) {
@@ -168,6 +229,11 @@ void CharacterTable_delete(struct CharacterTable *table, int id) {
     }
 }
 
+/**
+ * @brief Print the entire table to the console.
+ * 
+ * @param table The table to print
+ */
 void CharacterTable_print(struct CharacterTable *table) {
     for (int i = 0; i < MAX_ROWS_CS; i++) {
         struct CharacterRecord *row = &table->rows[i];
@@ -178,6 +244,11 @@ void CharacterTable_print(struct CharacterTable *table) {
     }
 }
 
+/**
+ * @brief The dedicated destructor for the CharacterTable struct.
+ * 
+ * @param table 
+ */
 void CharacterTable_destroy(struct CharacterTable *table) {
     free(table);
 }

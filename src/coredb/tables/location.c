@@ -17,6 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "location.h"
+#include "row.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -154,15 +155,9 @@ void LocationTable_destroy(struct LocationTable *table)
 
 unsigned short LocationTable_add(struct LocationTable *table, struct LocationRecord *record)
 {
-    for (int i = 0; i < MAX_LOCATIONS; i++)
-    {
-        if (table->locations[i].set != 1)
-        {
-            memcpy(&table->locations[i], record, sizeof(struct LocationRecord));
-            return record->id;
-        }
-    }
-    return 0;
+    int next_idx = findNextRowToFill(table->locations, MAX_LOCATIONS);
+    memcpy(&table->locations[next_idx], record, sizeof(struct LocationRecord));
+    return table->locations[next_idx].id;
 }
 
 unsigned short LocationTable_update(struct LocationTable *table, struct LocationRecord *record, unsigned short id)

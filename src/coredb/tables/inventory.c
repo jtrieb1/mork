@@ -17,6 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "inventory.h"
+#include "row.h"
 
 #include <lcthw/dbg.h>
 #include <stdlib.h>
@@ -120,34 +121,12 @@ void InventoryTable_destroy(struct InventoryTable* table)
     free(table);
 }
 
-static unsigned short findNextRowToFill(struct InventoryTable *table)
-{
-    unsigned short idx = 0;
-    for (int i = 0; i < MAX_ROWS_INVENTORIES; i++) {
-        if (table->rows[i].id == 0) {
-            idx = i;
-            break;
-        }
-    }
-    if (idx == 0) {
-        // No empty rows, so find oldest and overwrite
-        int min_id = 65535;
-        for (int i = 0; i < MAX_ROWS_INVENTORIES; i++) {
-            if (table->rows[i].id < min_id) {
-                min_id = table->rows[i].id;
-                idx = i;
-            }
-        }
-    }
-    return idx;
-}
-
 unsigned short InventoryTable_add(struct InventoryTable *table, unsigned short owner_id, int junction_id)
 {
     unsigned short id = 0;
     for (int i = 0; i < MAX_ROWS_INVENTORIES; i++) {
         if (table->rows[i].id == 0) {
-            id = findNextRowToFill(table);
+            id = findNextRowToFill(table->rows, MAX_ROWS_INVENTORIES);
             table->rows[i].id = junction_id;
             table->rows[i].owner_id = owner_id;
             break;

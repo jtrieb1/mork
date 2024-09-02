@@ -17,6 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "dialog.h"
+#include "row.h"
 
 #include <lcthw/dbg.h>
 #include <stdlib.h>
@@ -77,31 +78,9 @@ void DialogTable_destroy(struct DialogTable *table)
     free(table);
 }
 
-static unsigned short findNextRowToFill(struct DialogTable *table)
-{
-    unsigned short idx = 0;
-    for (int i = 0; i < MAX_ROWS_DIALOG; i++) {
-        if (table->rows[i].id == 0) {
-            idx = i;
-            break;
-        }
-    }
-    if (idx == 0) {
-        // No empty rows, so find oldest and overwrite
-        int min_id = 65535;
-        for (int i = 0; i < MAX_ROWS_DIALOG; i++) {
-            if (table->rows[i].id < min_id) {
-                min_id = table->rows[i].id;
-                idx = i;
-            }
-        }
-    }
-    return idx;
-}
-
 unsigned short DialogTable_newRow(struct DialogTable *table, struct DialogRecord *rec)
 {
-    unsigned short idx = findNextRowToFill(table);
+    unsigned short idx = findNextRowToFill(table->rows, MAX_ROWS_DIALOG);
     memcpy(&table->rows[idx], rec, sizeof(struct DialogRecord));
     return rec->id;
 }

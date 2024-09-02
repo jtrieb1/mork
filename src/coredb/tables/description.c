@@ -17,16 +17,30 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "description.h"
+#include "row.h"
 
 #include <string.h>
 #include <lcthw/dbg.h>
 #include <stdlib.h>
 
+/**
+ * @brief Quick and dirty way to create a default description record.
+ * 
+ * @return struct DescriptionRecord* 
+ */
 struct DescriptionRecord *DescriptionRecord_default()
 {
     return DescriptionRecord_create(0, "", 0);
 }
 
+/**
+ * @brief The preferred constructor for the DescriptionRecord struct.
+ * 
+ * @param id            The ID of the record
+ * @param description   The description 
+ * @param next_id       The ID of a continuation record or 0
+ * @return struct DescriptionRecord* 
+ */
 struct DescriptionRecord *DescriptionRecord_create(unsigned short id, char *description, int next_id)
 {
     struct DescriptionRecord *entry = calloc(1, sizeof(struct DescriptionRecord));
@@ -43,12 +57,22 @@ error:
     return NULL;
 }
 
+/**
+ * @brief The destructor for the DescriptionRecord struct.
+ * 
+ * @param entry The record to destroy
+ */
 void DescriptionRecord_destroy(struct DescriptionRecord *entry)
 {
     free(entry);
     entry = NULL;
 }
 
+/**
+ * @brief Initialize the DescriptionTable with default records.
+ * 
+ * @param table The table to initialize
+ */
 void DescriptionTable_init(struct DescriptionTable *table) {
     struct DescriptionRecord *record = DescriptionRecord_default();
     for (int i = 0; i < MAX_ROWS_DESC; i++) {
@@ -58,6 +82,11 @@ void DescriptionTable_init(struct DescriptionTable *table) {
     record = NULL;
 }
 
+/**
+ * @brief Create a new DescriptionTable.
+ * 
+ * @return struct DescriptionTable* 
+ */
 struct DescriptionTable *DescriptionTable_create()
 {
     struct DescriptionTable *table = calloc(1, sizeof(struct DescriptionTable));
@@ -70,36 +99,27 @@ error:
     return NULL;
 }
 
+/**
+ * @brief Destroy a DescriptionTable.
+ * 
+ * @param table The table to destroy
+ */
 void DescriptionTable_destroy(struct DescriptionTable *table)
 {
     free(table);
 }
 
-static unsigned short findNextRowToFill(struct DescriptionTable *table)
-{
-    unsigned short idx = 0;
-    for (int i = 0; i < MAX_ROWS_DESC; i++) {
-        if (table->rows[i].id == 0) {
-            idx = i;
-            break;
-        }
-    }
-    if (idx == 0) {
-        // No empty rows, so find oldest and overwrite
-        int min_id = 65535;
-        for (int i = 0; i < MAX_ROWS_DESC; i++) {
-            if (table->rows[i].id < min_id) {
-                min_id = table->rows[i].id;
-                idx = i;
-            }
-        }
-    }
-    return idx;
-}
+/**
+ * @brief Calculates the index of the next row to fill in the table. If no empty rows are found, the
+ *        index of the row with the lowest ID is chosen.
+ * 
+ * @param table 
+ * @return unsigned short The index of the next row to fill
+ */
 
 unsigned short DescriptionTable_insert(struct DescriptionTable *table, struct DescriptionRecord *record)
 {
-    unsigned short idx = findNextRowToFill(table);
+    unsigned short idx = findNextRowToFill(table->rows, MAX_ROWS_DESC);
     memcpy(&table->rows[idx], record, sizeof(struct DescriptionRecord));
     table->rows[idx].set = 1;
     return table->rows[idx].id;

@@ -17,6 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "items.h"
+#include "row.h"
 
 #include <lcthw/dbg.h>
 #include <stdlib.h>
@@ -73,31 +74,9 @@ void ItemTable_destroy(struct ItemTable *table)
     free(table);
 }
 
-static unsigned short findNextRowToFill(struct ItemTable *table)
-{
-    unsigned short idx = 0;
-    for (int i = 0; i < MAX_ROWS_ITEMS; i++) {
-        if (table->rows[i].id == 0) {
-            idx = i;
-            break;
-        }
-    }
-    if (idx == 0) {
-        // No empty rows, so find oldest and overwrite
-        int min_id = 65535;
-        for (int i = 0; i < MAX_ROWS_ITEMS; i++) {
-            if (table->rows[i].id < min_id) {
-                min_id = table->rows[i].id;
-                idx = i;
-            }
-        }
-    }
-    return idx;
-}
-
 unsigned short ItemTable_newRow(struct ItemTable *it, struct ItemRecord *record)
 {
-    unsigned short idx = findNextRowToFill(it);
+    unsigned short idx = findNextRowToFill(it->rows, MAX_ROWS_ITEMS);
     memcpy(&it->rows[idx], record, sizeof(struct ItemRecord));
     return it->rows[idx].id;
 }

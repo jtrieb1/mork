@@ -2,6 +2,7 @@
 
 #include "../utils/error.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 
 #define MAX_INPUT 255
@@ -29,7 +30,6 @@ enum ActionTargetKind {
     TARGET_SELF,
     TARGET_CHARACTER,
     TARGET_ROOM,
-    TARGET_PROP
 };
 
 struct Action {

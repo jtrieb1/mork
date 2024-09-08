@@ -1,5 +1,7 @@
 #include "action.h"
 
+#include <lcthw/dbg.h>
+
 struct Action *Action_create(const char *input)
 {
     struct Action *action = malloc(sizeof(struct Action));
@@ -9,6 +11,9 @@ struct Action *Action_create(const char *input)
     action->raw_input[MAX_INPUT - 1] = '\0';
 
     return action;
+
+error:
+    return NULL;
 }
 
 enum MorkResult Action_destroy(struct Action *action)

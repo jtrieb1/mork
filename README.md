@@ -1,13 +1,10 @@
 # Welcome to Mork
-Mork is an incredibly dumb exercise in building a Zork-like in C.
-I thought this would be fun to do, and I was right. It's been a blast.
-I'm not sure how far I'll take this, but I'm having fun with it.
-Currently using this as an exercise in writing lightweight databases.
+Mork is a library for building Zork-like games in C. It is currently a work in progress.
 
 ## Building
-Mork is pretty easy to build. Just run `make` in the root directory and you'll see mork appear in the `bin` directory.
-There are also some unit tests that run during the build process. If you want to run them manually, just run `make test`.
-If any of those tests fail, I'd love to hear about it. Please open an issue.
-
-## Running
-To run Mork, just run `./bin/mork`. You'll be dropped into the game, or as much of it as there is.
+Run `make` in the root directory and the various tools associated with Mork will
+appear in the `bin` directory. The packaged library will appear in the `build`
+directory in both static and dynamic formats. Header files are collected into
+`build/headers`. If you run `make install`, the Mork library will copy itself
+into your `/usr/lib` folder and the headers will be placed into `/usr/include/mork`.
+Of course, you may need to use `sudo`. Running `make uninstall` will reverse this.

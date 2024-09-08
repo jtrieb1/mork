@@ -106,8 +106,11 @@ void get_cursor_position(int *col, int *row)
     tcsetattr(0, TCSANOW, &term);
 
     printf("\033[6n");
-    scanf("\033[%d;%dR", row, col);
-
+    int retval = scanf("\033[%d;%dR", row, col);
+    if (retval != 2) {
+        log_err("Failed to read cursor position");
+    }
+    
     tcsetattr(0, TCSANOW, &restore);
     return;
 }

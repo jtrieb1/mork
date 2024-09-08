@@ -18,6 +18,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
+#include "../../utils/error.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -57,8 +59,6 @@ struct CharacterRecord {
 #define GET_MANA(health_and_mana) ((health_and_mana >> 16) & 0xFFFF)
 #define SET_HEALTH_AND_MANA(health, mana) ((health & 0xFFFF) | ((mana & 0xFFFF) << 16))
 
-struct CharacterRecord* CharacterRecord_default();
-void CharacterRecord_init(struct CharacterRecord *rec);
 struct CharacterRecord *CharacterRecord_create(
     char *name,
     unsigned int level,
@@ -69,8 +69,8 @@ struct CharacterRecord *CharacterRecord_create(
     unsigned char *stats,
     unsigned int numStats
 );
-void CharacterRecord_destroy(struct CharacterRecord *rec);
-void CharacterRecord_print(struct CharacterRecord *rec);
+enum MorkResult CharacterRecord_destroy(struct CharacterRecord *rec);
+enum MorkResult CharacterRecord_print(struct CharacterRecord *rec);
 
 // We know that the maximum number of rows is 256,
 // so we can use unsigned chars to store row index data
@@ -80,13 +80,13 @@ struct CharacterTable {
 
 struct CharacterTable *CharacterTable_create();
 
-void CharacterTable_init(struct CharacterTable *table);
-unsigned char CharacterTable_newRow(struct CharacterTable *table, struct CharacterRecord *record);
-unsigned char CharacterTable_update(struct CharacterTable *table, struct CharacterRecord *record, int id);
+enum MorkResult CharacterTable_init(struct CharacterTable *table);
+enum MorkResult CharacterTable_newRow(struct CharacterTable *table, struct CharacterRecord *record);
+enum MorkResult CharacterTable_update(struct CharacterTable *table, struct CharacterRecord *record);
 
 struct CharacterRecord *CharacterTable_get(struct CharacterTable *table, int id);
 struct CharacterRecord *CharacterTable_getByName(struct CharacterTable *table, char *name);
-void CharacterTable_delete(struct CharacterTable *table, int id);
+enum MorkResult CharacterTable_delete(struct CharacterTable *table, int id);
 
-void CharacterTable_destroy(struct CharacterTable *table);
-void CharacterTable_print(struct CharacterTable *table);
+enum MorkResult CharacterTable_destroy(struct CharacterTable *table);
+enum MorkResult CharacterTable_print(struct CharacterTable *table);

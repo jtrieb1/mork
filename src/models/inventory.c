@@ -55,40 +55,41 @@ error:
     return NULL;
 }
 
-void Inventory_destroy(struct Inventory *inventory)
+enum MorkResult Inventory_destroy(struct Inventory *inventory)
 {
     for (int i = 0; i < MAX_INVENTORY_ITEMS; i++) {
         if (inventory->items[i] != NULL) {
-            Item_destroy(inventory->items[i]);
+            return Item_destroy(inventory->items[i]);
         }
     }
 
     free(inventory);
+    return MORK_OK;
 }
 
-int Inventory_addItem(struct Inventory *inventory, struct Item *item)
+enum MorkResult Inventory_addItem(struct Inventory *inventory, struct Item *item)
 {
     for (int i = 0; i < MAX_INVENTORY_ITEMS; i++) {
         if (inventory->items[i] == NULL) {
             inventory->items[i] = item;
-            return 0;
+            return MORK_OK;
         }
     }
 
-    return -1;
+    return MORK_ERROR_MODEL_INVENTORY_FULL;
 }
 
-int Inventory_removeItem(struct Inventory *inventory, struct Item *item)
+enum MorkResult Inventory_removeItem(struct Inventory *inventory, struct Item *item)
 {
     for (int i = 0; i < MAX_INVENTORY_ITEMS; i++) {
         if (strncmp(inventory->items[i]->name, item->name, MAX_NAME - 1) == 0) {
             Item_destroy(inventory->items[i]);
             inventory->items[i] = NULL;
-            return 0;
+            return MORK_OK;
         }
     }
 
-    return -1;
+    return MORK_ERROR_MODEL_INVENTORY_ITEM_NOT_FOUND;
 }
 
 int Inventory_hasItem(struct Inventory *inventory, struct Item *item)
@@ -156,13 +157,14 @@ struct Item *Inventory_getItemByName(struct Inventory *inventory, const char *na
     return NULL;
 }
 
-void Inventory_print(struct Inventory *inventory)
+enum MorkResult Inventory_print(struct Inventory *inventory)
 {
     for (int i = 0; i < MAX_INVENTORY_ITEMS; i++) {
         if (inventory->items[i] != NULL) {
             printf("%s\n", inventory->items[i]->name);
         }
     }
+    return MORK_OK;
 }
 
 int Inventory_save(struct Database *db, int owner_id, struct Inventory *inventory)
@@ -173,7 +175,13 @@ int Inventory_save(struct Database *db, int owner_id, struct Inventory *inventor
     check(owner != NULL, "Failed to get owner record");
     record = Database_getInventoryByOwner(db, owner->name);
     if (record == NULL) {
-        return Database_createInventory(db, owner->name);
+        enum MorkResult res = Database_createInventory(db, owner->name);
+        if (res != MORK_OK) {
+            log_err("Failed to create inventory record");
+            goto error;
+        }
+        record = Database_getInventoryByOwner(db, owner->name);
+        return record->id;
     } else {
         for (int i = 0; i < MAX_INVENTORY_ITEMS; ++i) {
             if (inventory->items[i] != NULL) {
@@ -182,7 +190,12 @@ int Inventory_save(struct Database *db, int owner_id, struct Inventory *inventor
                 record->item_ids[i] = 0;
             }
         }
-        return Database_updateInventory(db, record, record->id);
+        enum MorkResult res = Database_updateInventory(db, record);
+        if (res != MORK_OK) {
+            log_err("Failed to update inventory record");
+            goto error;
+        }
+        return record->id;
     }
 
 error:

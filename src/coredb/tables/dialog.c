@@ -22,13 +22,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <lcthw/dbg.h>
 #include <stdlib.h>
 
-struct DialogRecord *DialogRecord_default()
-{
-    return DialogRecord_create(0, "", 0);
-}
-
+/**
+ * @brief The preferred constructor for the DialogRecord struct.
+ * 
+ * @param id        The ID of the record
+ * @param dialog    The dialog text
+ * @param next_id   The ID of a continuation record or 0
+ * @return struct DialogRecord* 
+ */
 struct DialogRecord *DialogRecord_create(unsigned short id, char *dialog, int next_id)
 {
+    check(id > 0, "Expected valid ID");
+    check(dialog != NULL && strcmp(dialog, "") != 0, "Expected dialog, got empty or NULL");
+    check(next_id >= 0, "Expected valid or zero next_id, got %d", next_id);
+
     struct DialogRecord *record = calloc(1, sizeof(struct DialogRecord));
     check_mem(record);
 
@@ -43,19 +50,39 @@ error:
     return NULL;
 }
 
-void DialogRecord_destroy(struct DialogRecord *record)
+/**
+ * @brief The destructor for the DialogRecord struct.
+ * 
+ * @param record 
+ */
+enum MorkResult DialogRecord_destroy(struct DialogRecord *record)
 {
+    if (!record) { return MORK_ERROR_DB_RECORD_NULL; }
     free(record);
+    return MORK_OK;
 }
 
-void DialogTable_init(struct DialogTable *table) {
-    struct DialogRecord *record = DialogRecord_default();
+/**
+ * @brief Initialize the DialogTable struct with default values.
+ * 
+ * @param table 
+ */
+enum MorkResult DialogTable_init(struct DialogTable *table) {
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
+
     for (int i = 0; i < MAX_ROWS_DIALOG; i++) {
-        memcpy(&table->rows[i], record, sizeof(struct DialogRecord));
+        table->rows[i].id = 0;
+        table->rows[i].set = 0;
     }
-    free(record);
+
+    return MORK_OK;
 }
 
+/**
+ * @brief The default constructor for the DialogTable struct.
+ * 
+ * @return struct DialogTable* 
+ */
 struct DialogTable *DialogTable_create()
 {
     struct DialogTable *table = calloc(1, sizeof(struct DialogTable));
@@ -68,57 +95,119 @@ error:
     return NULL;
 }
 
-void DialogTable_destroy(struct DialogTable *table)
+/**
+ * @brief The destructor for the DialogTable struct.
+ * 
+ * @param table 
+ */
+enum MorkResult DialogTable_destroy(struct DialogTable *table)
 {
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
+    
     for (int i = 0; i < MAX_ROWS_DIALOG; i++) {
         if (table->rows[i].set == 1) {
-            DialogRecord_destroy(&table->rows[i]);
+            enum MorkResult retval = DialogRecord_destroy(&table->rows[i]);
+            if (retval != MORK_OK) {
+                return retval;
+            }
         }
     }
+
     free(table);
+    return MORK_OK;
 }
 
-unsigned short DialogTable_newRow(struct DialogTable *table, struct DialogRecord *rec)
+/**
+ * @brief Find the next row to fill in the table.
+ * 
+ * @param rows The rows to search
+ * @param max The maximum number of rows
+ * @return unsigned short 
+ */
+enum MorkResult DialogTable_newRow(struct DialogTable *table, struct DialogRecord *rec)
 {
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
+    if (rec == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
+
     unsigned short idx = findNextRowToFill(table->rows, MAX_ROWS_DIALOG);
     memcpy(&table->rows[idx], rec, sizeof(struct DialogRecord));
-    return rec->id;
+    return MORK_OK;
 }
 
-unsigned short DialogTable_update(struct DialogTable *table, struct DialogRecord *rec, unsigned short id)
+/**
+ * @brief Update a Dialog in the table.
+ * 
+ * @param table 
+ * @param rec 
+ * @param id 
+ * @return unsigned short 
+ */
+enum MorkResult DialogTable_update(struct DialogTable *table, struct DialogRecord *rec)
 {
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
+    if (rec == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
+
     for (unsigned short i = 0; i < MAX_ROWS_DIALOG; ++i) {
-        if (table->rows[i].id == id) {
+        if (table->rows[i].id == rec->id) {
             memcpy(&table->rows[i], rec, sizeof(struct DialogRecord));
-            return id;
+            return MORK_OK;
         }
     }
 
     return DialogTable_newRow(table, rec);
 }
 
+/**
+ * @brief Get a Dialog from the table.
+ * 
+ * @param table 
+ * @param id 
+ * @return struct DialogRecord* 
+ */
 struct DialogRecord *DialogTable_get(struct DialogTable *table, unsigned short id)
 {
+    check(table != NULL, "Expected table, got NULL");
+    check(id > 0, "Expected valid ID, got 0");
+
     for (int i = 0; i < MAX_ROWS_DIALOG; i++) {
         if (table->rows[i].id == id) {
             return &table->rows[i];
         }
     }
+
+error:
     return NULL;
 }
 
-void DialogTable_delete(struct DialogTable *table, unsigned short id)
+/**
+ * @brief Delete a Dialog from the table.
+ * 
+ * @param table 
+ * @param id 
+ */
+enum MorkResult DialogTable_delete(struct DialogTable *table, unsigned short id)
 {
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
+    if (id == 0) { return MORK_ERROR_DB_INVALID_ID; }
+
     for (int i = 0; i < MAX_ROWS_DIALOG; i++) {
         if (table->rows[i].id == id) {
             table->rows[i].set = 0;
-            return;
+            return MORK_OK;
         }
     }
+    return MORK_ERROR_DB_NOT_FOUND;
 }
 
-void DialogTable_print(struct DialogTable *table)
+/**
+ * @brief Print all records in the table
+ * 
+ * @param table 
+ */
+enum MorkResult DialogTable_print(struct DialogTable *table)
 {
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
+
     for (int i = 0; i < MAX_ROWS_DIALOG; i++) {
         if (table->rows[i].set == 1) {
             printf("ID: %d\n", table->rows[i].id);
@@ -126,4 +215,5 @@ void DialogTable_print(struct DialogTable *table)
             printf("Next ID: %d\n", table->rows[i].next_id);
         }
     }
+    return MORK_OK;
 }

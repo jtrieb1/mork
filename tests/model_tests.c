@@ -154,7 +154,7 @@ char *test_remove_item_from_inventory()
     struct Item *item = Item_loadByName(db, "Mork's Suspenders");
     mu_assert(item != NULL, "Failed to load item.");
 
-    mu_assert(Inventory_removeItem(mork->inventory, item) != -1, "Failed to find item to remove.");
+    mu_assert(Inventory_removeItem(mork->inventory, item) == MORK_OK, "Failed to find item to remove.");
     mu_assert(Inventory_getItemCount(mork->inventory) == 0, "Failed to remove item from inventory.");
 
     // Write everything to the DB by writing the character

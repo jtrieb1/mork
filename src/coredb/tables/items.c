@@ -22,13 +22,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <lcthw/dbg.h>
 #include <stdlib.h>
 
-struct ItemRecord *ItemRecord_default()
-{
-    return ItemRecord_create(0, "Empty", 0);
-}
-
 struct ItemRecord *ItemRecord_create(unsigned short id, char *name, unsigned short description_id)
 {
+    check(id > 0, "Expected a valid ID");
+    check(name != NULL && strcmp(name, "") != 0, "Expected a valid name");
+
     struct ItemRecord *record = calloc(1, sizeof(struct ItemRecord));
     check_mem(record);
 
@@ -44,17 +42,21 @@ error:
     return NULL;
 }
 
-void ItemRecord_destroy(struct ItemRecord *record)
+enum MorkResult ItemRecord_destroy(struct ItemRecord *record)
 {
+    if (record == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
     free(record);
+    return MORK_OK;
 }
 
-void ItemTable_init(struct ItemTable *table) {
-    struct ItemRecord *record = ItemRecord_default();
+enum MorkResult ItemTable_init(struct ItemTable *table) {
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
+
     for (int i = 0; i < MAX_ROWS_ITEMS; i++) {
-        memcpy(&table->rows[i], record, sizeof(struct ItemRecord));
+        table->rows[i].id = 0;
+        table->rows[i].set = 0;
     }
-    free(record);
+    return MORK_OK;
 }
 
 struct ItemTable *ItemTable_create()
@@ -69,24 +71,33 @@ error:
     return NULL;
 }
 
-void ItemTable_destroy(struct ItemTable *table)
+enum MorkResult ItemTable_destroy(struct ItemTable *table)
 {
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
     free(table);
+    return MORK_OK;
 }
 
-unsigned short ItemTable_newRow(struct ItemTable *it, struct ItemRecord *record)
+enum MorkResult ItemTable_newRow(struct ItemTable *it, struct ItemRecord *record)
 {
+    if (it == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
+    if (record == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
+
     unsigned short idx = findNextRowToFill(it->rows, MAX_ROWS_ITEMS);
     memcpy(&it->rows[idx], record, sizeof(struct ItemRecord));
-    return it->rows[idx].id;
+
+    return MORK_OK;
 }
 
-unsigned short ItemTable_update(struct ItemTable *it, struct ItemRecord *record)
+enum MorkResult ItemTable_update(struct ItemTable *it, struct ItemRecord *record)
 {
+    if (it == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
+    if (record == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
+
     for (unsigned short i = 0; i < MAX_ROWS_ITEMS; i++) {
         if (it->rows[i].id == record->id) {
             memcpy(&it->rows[i], record, sizeof(struct ItemRecord));
-            return it->rows[i].id;
+            return MORK_OK;
         }
     }
 
@@ -95,41 +106,59 @@ unsigned short ItemTable_update(struct ItemTable *it, struct ItemRecord *record)
 
 struct ItemRecord *ItemTable_get(struct ItemTable *table, unsigned short id)
 {
-    for (unsigned short i = 0; i < MAX_ROWS_ITEMS; i++) {
-        if (table->rows[i].id == id) {
+    check(table != NULL, "Expected a valid table, got NULL");
+    check(table->rows != NULL, "Expected valid rows, got NULL");
+    check(id > 0, "Expected a valid ID");
+
+    for (int i = 0; i < MAX_ROWS_ITEMS; i++) {
+        if (table->rows[i].set == 1 && table->rows[i].id == id) {
             return &table->rows[i];
         }
     }
 
+error:
     return NULL;
 }
 
 struct ItemRecord *ItemTable_getByName(struct ItemTable *table, char *name)
 {
+    check(table != NULL, "Expected a valid table, got NULL");
+    check(name != NULL && strcmp(name, "") != 0, "Expected a valid name");
+
     for (int i = 0; i < MAX_ROWS_ITEMS; i++) {
         if (strncmp(table->rows[i].name, name, MAX_NAME) == 0) {
             return &table->rows[i];
         }
     }
 
+error:
     return NULL;
 }
 
-void ItemTable_list(struct ItemTable *table)
+enum MorkResult ItemTable_list(struct ItemTable *table)
 {
+    if (table == NULL) return MORK_ERROR_DB_TABLE_NULL; 
+
     for (int i = 0; i < MAX_ROWS_ITEMS; i++) {
         if (table->rows[i].set == 1) {
             log_info("ID: %d, Name: %s, Description ID: %d", table->rows[i].id, table->rows[i].name, table->rows[i].description_id);
         }
     }
+
+    return MORK_OK;
 }
 
-void ItemTable_delete(struct ItemTable *table, unsigned short id)
+enum MorkResult ItemTable_delete(struct ItemTable *table, unsigned short id)
 {
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
+    if (id == 0) { return MORK_ERROR_DB_INVALID_ID; }
+
     for (int i = 0; i < MAX_ROWS_ITEMS; i++) {
         if (table->rows[i].id == id) {
             table->rows[i].set = 0;
-            return;
+            return MORK_OK;
         }
     }
+
+    return MORK_ERROR_DB_NOT_FOUND;
 }

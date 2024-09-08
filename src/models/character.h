@@ -45,7 +45,7 @@ void Character_destroy(struct Character *character);
 
 struct Character *Character_clone(struct Character *source);
 
-void Character_save(struct Database *db, struct Character *character);
+int Character_save(struct Database *db, struct Character *character);
 struct Character *Character_load(struct Database *db, char *name);
 
 unsigned short Character_getStat(struct Character *character, unsigned char stat);

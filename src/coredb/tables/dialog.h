@@ -18,6 +18,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
+#include "../../utils/error.h"
+
 #define MAX_TEXT 505 // To ensure we add to 512 bytes
 #define MAX_ROWS_DIALOG 65535
 
@@ -30,18 +32,18 @@ struct DialogRecord {
 };
 
 struct DialogRecord *DialogRecord_create(unsigned short id, char *dialog, int next_id);
-void DialogRecord_destroy(struct DialogRecord *record);
+enum MorkResult DialogRecord_destroy(struct DialogRecord *record);
 
 struct DialogTable {
     struct DialogRecord rows[MAX_ROWS_DIALOG]; // Total size on disk is 512 * 65535 = 33,553,920 bytes. A bit excessive for Zork, but this is Mork
 };
 
 struct DialogTable *DialogTable_create();
-void DialogTable_init(struct DialogTable *table);
-void DialogTable_destroy(struct DialogTable *table);
+enum MorkResult DialogTable_init(struct DialogTable *table);
+enum MorkResult DialogTable_destroy(struct DialogTable *table);
 
 struct DialogRecord *DialogTable_get(struct DialogTable *table, unsigned short id);
-unsigned short DialogTable_newRow(struct DialogTable *table, struct DialogRecord *rec);
-unsigned short DialogTable_update(struct DialogTable *table, struct DialogRecord *rec, unsigned short id);
-void DialogTable_delete(struct DialogTable *table, unsigned short id);
-void DialogTable_print(struct DialogTable *table);
+enum MorkResult DialogTable_newRow(struct DialogTable *table, struct DialogRecord *rec);
+enum MorkResult DialogTable_update(struct DialogTable *table, struct DialogRecord *rec);
+enum MorkResult DialogTable_delete(struct DialogTable *table, unsigned short id);
+enum MorkResult DialogTable_print(struct DialogTable *table);

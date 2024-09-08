@@ -22,25 +22,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <lcthw/dbg.h>
 
 /**
- * @brief Calculates the index of the next row to fill in the table. If no empty rows are found, the
- *        index of the row with the lowest ID is chosen.
- * 
- * @param table 
- * @return unsigned short The index of the next row to fill
- */
-
-/**
- * @brief Quick and dirty way to create a default character record.
- * 
- * @return struct CharacterRecord* 
- */
-struct CharacterRecord *CharacterRecord_default() {
-    return CharacterRecord_create(
-        "", 0, 0, 0, 0, 0, 0, 0
-    );
-}
-
-/**
  * @brief The preferred constructor for the CharacterRecord struct.
  * 
  * @param name        
@@ -63,6 +44,8 @@ struct CharacterRecord *CharacterRecord_create(
     unsigned char *stats,
     unsigned int numStats
 ) {
+    check(name != NULL && strcmp(name, "") != 0, "Expected a valid character name");
+
     struct CharacterRecord *record = (struct CharacterRecord *)calloc(1, sizeof(struct CharacterRecord));
     check_mem(record);
     record->id = 0;
@@ -90,8 +73,10 @@ error:
  * 
  * @param record The record to destroy
  */
-void CharacterRecord_destroy(struct CharacterRecord *record) {
+enum MorkResult CharacterRecord_destroy(struct CharacterRecord *record) {
+    if (record == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
     free(record);
+    return MORK_OK;
 }
 
 /**
@@ -99,7 +84,9 @@ void CharacterRecord_destroy(struct CharacterRecord *record) {
  * 
  * @param record The record to print
  */
-void CharacterRecord_print(struct CharacterRecord *record) {
+enum MorkResult CharacterRecord_print(struct CharacterRecord *record) {
+    if (record == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
+
     printf("Character Stats Record\n");
     printf("ID: %d\n", record->id);
     printf("Set: %d\n", record->set);
@@ -118,6 +105,7 @@ void CharacterRecord_print(struct CharacterRecord *record) {
         }
         printf("%llu ", GET_STAT(record->stats, i));
     }
+    return MORK_OK;
 }
 
 /**
@@ -140,12 +128,14 @@ error:
  * 
  * @param table The table to initialize
  */
-void CharacterTable_init(struct CharacterTable *table) {
-    struct CharacterRecord *record = CharacterRecord_default();
+enum MorkResult CharacterTable_init(struct CharacterTable *table) {
+    if (table == NULL) return MORK_ERROR_DB_TABLE_NULL;
+
     for (int i = 0; i < MAX_ROWS_CS; i++) {
-        memcpy(&table->rows[i], record, sizeof(struct CharacterRecord));
+        table->rows[i].id = 0;
+        table->rows[i].set = 0;
     }
-    free(record);
+    return MORK_OK;
 }
 
 
@@ -154,13 +144,13 @@ void CharacterTable_init(struct CharacterTable *table) {
  * 
  * @param table  The table to add the row to
  * @param record The record to add
- * @return unsigned char The ID of the new row
+ * @return enum MorkResult The status of the operation
  */
-unsigned char CharacterTable_newRow(struct CharacterTable *table, struct CharacterRecord *record)
+enum MorkResult CharacterTable_newRow(struct CharacterTable *table, struct CharacterRecord *record)
 {
     unsigned short idx = findNextRowToFill(table->rows, MAX_ROWS_CS);
     memcpy(&table->rows[idx], record, sizeof(struct CharacterRecord));
-    return table->rows[idx].id;
+    return MORK_OK;
 }
 
 /**
@@ -171,14 +161,18 @@ unsigned char CharacterTable_newRow(struct CharacterTable *table, struct Charact
  * @param id     The ID of the row to update
  * @return unsigned char The ID of the updated row
  */
-unsigned char CharacterTable_update(struct CharacterTable *table, struct CharacterRecord *record, int id)
+enum MorkResult CharacterTable_update(struct CharacterTable *table, struct CharacterRecord *record)
 {
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
+    if (record == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
+
     for (int i = 0; i < MAX_ROWS_CS; i++) {
-        if (table->rows[i].id == id) {
+        if (table->rows[i].id == record->id) {
             memcpy(&table->rows[i], record, sizeof(struct CharacterRecord));
-            return id;
+            return MORK_OK;
         }
     }
+
     return CharacterTable_newRow(table, record);
 }
 
@@ -190,11 +184,16 @@ unsigned char CharacterTable_update(struct CharacterTable *table, struct Charact
  * @return struct CharacterRecord* 
  */
 struct CharacterRecord *CharacterTable_get(struct CharacterTable *table, int id) {
+    check(table != NULL, "Expected a valid table, got NULL");
+    check(id > 0, "Expected a valid id, got %d", id);
+
     for (int i = 0; i < MAX_ROWS_CS; i++) {
         if (table->rows[i].id == id) {
             return &table->rows[i];
         }
     }
+
+error:
     return NULL;
 }
 
@@ -206,11 +205,16 @@ struct CharacterRecord *CharacterTable_get(struct CharacterTable *table, int id)
  * @return struct CharacterRecord* 
  */
 struct CharacterRecord *CharacterTable_getByName(struct CharacterTable *table, char *name) {
+    check(table != NULL, "Expected a valid table, got NULL");
+    check(name != NULL && strcmp(name, "") != 0, "Expected a valid name");
+
     for (int i = 0; i < MAX_ROWS_CS; i++) {
         if (strcmp(table->rows[i].name, name) == 0) {
             return &table->rows[i];
         }
     }
+
+error:
     return NULL;
 }
 
@@ -220,13 +224,17 @@ struct CharacterRecord *CharacterTable_getByName(struct CharacterTable *table, c
  * @param table The table to delete from
  * @param id    The ID of the character to delete
  */
-void CharacterTable_delete(struct CharacterTable *table, int id) {
+enum MorkResult CharacterTable_delete(struct CharacterTable *table, int id) {
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
+    if (id <= 0) { return MORK_ERROR_DB_INVALID_ID; }
+
     for (int i = 0; i < MAX_ROWS_CS; i++) {
         if (table->rows[i].id == id) {
             table->rows[i].set = 0;
-            return;
+            return MORK_OK;
         }
     }
+    return MORK_ERROR_DB_NOT_FOUND;
 }
 
 /**
@@ -234,14 +242,19 @@ void CharacterTable_delete(struct CharacterTable *table, int id) {
  * 
  * @param table The table to print
  */
-void CharacterTable_print(struct CharacterTable *table) {
+enum MorkResult CharacterTable_print(struct CharacterTable *table) {
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
+
     for (int i = 0; i < MAX_ROWS_CS; i++) {
         struct CharacterRecord *row = &table->rows[i];
         if (row->set == 1) {
-            CharacterRecord_print(row);
+            if (CharacterRecord_print(row) != MORK_OK) {
+                return MORK_ERROR_DB;
+            }
         }
         printf("\n");
     }
+    return MORK_OK;
 }
 
 /**
@@ -249,6 +262,8 @@ void CharacterTable_print(struct CharacterTable *table) {
  * 
  * @param table 
  */
-void CharacterTable_destroy(struct CharacterTable *table) {
+enum MorkResult CharacterTable_destroy(struct CharacterTable *table) {
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
     free(table);
+    return MORK_OK;
 }

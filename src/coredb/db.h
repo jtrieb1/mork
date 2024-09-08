@@ -18,6 +18,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
+#include "../utils/error.h"
+
 #include "tables/character.h"
 #include "tables/description.h"
 #include "tables/dialog.h"
@@ -45,57 +47,55 @@ struct Database {
 };
 
 struct Database *Database_create();
-void Database_open(struct Database *db, const char *path);
-void Database_close(struct Database *db);
-void Database_flush(struct Database *db);
-void Database_destroy(struct Database *db);
-void Database_printAll(struct Database *db);
+enum MorkResult Database_open(struct Database *db, const char *path);
+enum MorkResult Database_close(struct Database *db);
+enum MorkResult Database_flush(struct Database *db);
+enum MorkResult Database_destroy(struct Database *db);
 
 // Table-level ops
 void *Database_get(struct Database *db, enum Table table);
-void Database_set(struct Database *db, enum Table table, void *data);
-void Database_write(struct Database *db, enum Table table);
-void Database_delete(struct Database *db, enum Table table, int id);
-void Database_print(struct Database *db, enum Table table);
+enum MorkResult Database_set(struct Database *db, enum Table table, void *data);
+enum MorkResult Database_write(struct Database *db, enum Table table);
+enum MorkResult Database_delete(struct Database *db, enum Table table);
+enum MorkResult Database_print(struct Database *db, enum Table table);
 
 unsigned int Database_getNextIndex(struct Database *db, enum Table table);
 
 // Record-level ops (setters return index of record in table)
 struct CharacterRecord *Database_getCharacter(struct Database *db, int id);
 struct CharacterRecord *Database_getCharacterByName(struct Database *db, char *name);
-int Database_createCharacter(struct Database *db, struct CharacterRecord *stats);
-int Database_updateCharacter(struct Database *db, struct CharacterRecord *stats, int id);
-void Database_deleteCharacter(struct Database *db, int id);
+enum MorkResult Database_createCharacter(struct Database *db, struct CharacterRecord *stats);
+enum MorkResult Database_updateCharacter(struct Database *db, struct CharacterRecord *stats);
+enum MorkResult Database_deleteCharacter(struct Database *db, int id);
 
 struct DescriptionRecord *Database_getDescription(struct Database *db, int id);
 struct DescriptionRecord *Database_getDescriptionByPrefix(struct Database *db, char *prefix);
 struct DescriptionRecord *Database_getOrCreateDescription(struct Database *db, char *prefix);
-int Database_createDescription(struct Database *db, struct DescriptionRecord *description);
-int Database_updateDescription(struct Database *db, struct DescriptionRecord *description, int id);
-void Database_deleteDescription(struct Database *db, int id);
+enum MorkResult Database_createDescription(struct Database *db, struct DescriptionRecord *description);
+enum MorkResult Database_updateDescription(struct Database *db, struct DescriptionRecord *description);
+enum MorkResult Database_deleteDescription(struct Database *db, int id);
 
 struct DialogRecord *Database_getDialog(struct Database *db, int id);
-int Database_createDialog(struct Database *db, struct DialogRecord *dialog);
-int Database_updateDialog(struct Database *db, struct DialogRecord *dialog, int id);
-void Database_deleteDialog(struct Database *db, int id);
+enum MorkResult Database_createDialog(struct Database *db, struct DialogRecord *dialog);
+enum MorkResult Database_updateDialog(struct Database *db, struct DialogRecord *dialog);
+enum MorkResult Database_deleteDialog(struct Database *db, int id);
 
 struct ItemRecord *Database_getItem(struct Database *db, int id);
 struct ItemRecord *Database_getItemByName(struct Database *db, char *name);
-struct ItemRecord *Database_getOrCreateItem(struct Database *db, char *name);
-int Database_createItem(struct Database *db, struct ItemRecord *item);
-int Database_updateItem(struct Database *db, struct ItemRecord *item, int id);
-void Database_deleteItem(struct Database *db, int id);
+enum MorkResult Database_createItem(struct Database *db, struct ItemRecord *item);
+enum MorkResult Database_updateItem(struct Database *db, struct ItemRecord *item);
+enum MorkResult Database_deleteItem(struct Database *db, int id);
 
 struct InventoryRecord *Database_getInventory(struct Database *db, int id);
 struct InventoryRecord *Database_getInventoryByOwner(struct Database *db, char *owner);
-int Database_createInventory(struct Database *db, char *owner);
-int Database_updateInventory(struct Database *db, struct InventoryRecord *record, int id);
-void Database_deleteInventory(struct Database *db, int id);
+enum MorkResult Database_createInventory(struct Database *db, char *owner);
+enum MorkResult Database_updateInventory(struct Database *db, struct InventoryRecord *record);
+enum MorkResult Database_deleteInventory(struct Database *db, int id);
 
 struct ItemRecord **Database_getItemsInInventory(struct Database *db, char *owner);
 
 struct LocationRecord *Database_getLocation(struct Database *db, int id);
 struct LocationRecord *Database_getLocationByName(struct Database *db, char *name);
-int Database_createLocation(struct Database *db, struct LocationRecord *location);
-int Database_updateLocation(struct Database *db, struct LocationRecord *location, int id);
-void Database_deleteLocation(struct Database *db, int id);
+enum MorkResult Database_createLocation(struct Database *db, struct LocationRecord *location);
+enum MorkResult Database_updateLocation(struct Database *db, struct LocationRecord *location);
+enum MorkResult Database_deleteLocation(struct Database *db, int id);

@@ -17,6 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #pragma once
+#include "../../utils/error.h"
 
 #define MAX_DESCRIPTION 512
 #define MAX_ROWS_DESC 65535
@@ -29,18 +30,20 @@ struct DescriptionRecord {
 };
 
 struct DescriptionRecord *DescriptionRecord_create(unsigned short id, char *description, int next_id);
-void DescriptionRecord_destroy(struct DescriptionRecord *entry);
+enum MorkResult DescriptionRecord_destroy(struct DescriptionRecord *entry);
 
 struct DescriptionTable {
     struct DescriptionRecord rows[MAX_ROWS_DESC];
 };
 
 struct DescriptionTable *DescriptionTable_create();
-void DescriptionTable_init(struct DescriptionTable *table);
-unsigned short DescriptionTable_insert(struct DescriptionTable *table, struct DescriptionRecord *entry);
-unsigned short DescriptionTable_update(struct DescriptionTable *table, struct DescriptionRecord *entry, unsigned short id);
+enum MorkResult DescriptionTable_init(struct DescriptionTable *table);
+enum MorkResult DescriptionTable_insert(struct DescriptionTable *table, struct DescriptionRecord *entry);
+enum MorkResult DescriptionTable_update(struct DescriptionTable *table, struct DescriptionRecord *entry);
 struct DescriptionRecord *DescriptionTable_get(struct DescriptionTable *table, unsigned short id);
 struct DescriptionRecord *DescriptionTable_get_next(struct DescriptionTable *table, unsigned short id); // For easy continuation of text
 struct DescriptionRecord *DescriptionTable_get_by_prefix(struct DescriptionTable *table, char *prefix);
-void DescriptionTable_delete(struct DescriptionTable *table, unsigned short id);
-void DescriptionTable_destroy(struct DescriptionTable *table);
+enum MorkResult DescriptionTable_delete(struct DescriptionTable *table, unsigned short id);
+enum MorkResult DescriptionTable_destroy(struct DescriptionTable *table);
+
+enum MorkResult DescriptionTable_print(struct DescriptionTable *table);

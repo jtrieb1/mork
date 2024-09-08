@@ -18,6 +18,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
+#include "../../utils/error.h"
+
 #define MAX_NAME 124
 #define MAX_ROWS_ITEMS 65535
 
@@ -29,19 +31,18 @@ struct ItemRecord {
 };
 
 struct ItemRecord *ItemRecord_create(unsigned short id, char *name, unsigned short description_id);
-void ItemRecord_destroy(struct ItemRecord *ir);
+enum MorkResult ItemRecord_destroy(struct ItemRecord *ir);
 
 struct ItemTable {
     struct ItemRecord rows[MAX_ROWS_ITEMS];
 };
 
 struct ItemTable *ItemTable_create();
-void ItemTable_init(struct ItemTable *it);
-void ItemTable_destroy(struct ItemTable *it);
+enum MorkResult ItemTable_init(struct ItemTable *it);
+enum MorkResult ItemTable_destroy(struct ItemTable *it);
 struct ItemRecord *ItemTable_get(struct ItemTable *it, unsigned short index);
 struct ItemRecord *ItemTable_getByName(struct ItemTable *it, char *name);
-unsigned short ItemTable_newRow(struct ItemTable *it, struct ItemRecord *record);
-unsigned short ItemTable_update(struct ItemTable *it, struct ItemRecord *record);
-void ItemTable_delete(struct ItemTable *it, unsigned short index);
-void ItemTable_print(struct ItemTable *it);
-void ItemTable_printRow(struct ItemTable *it, int index);
+enum MorkResult ItemTable_newRow(struct ItemTable *it, struct ItemRecord *record);
+enum MorkResult ItemTable_update(struct ItemTable *it, struct ItemRecord *record);
+enum MorkResult ItemTable_delete(struct ItemTable *it, unsigned short index);
+enum MorkResult ItemTable_list(struct ItemTable *it);

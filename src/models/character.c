@@ -103,7 +103,7 @@ void Character_destroy(struct Character *character)
     character = NULL;
 }
 
-void Character_save(struct Database *db, struct Character *character)
+int Character_save(struct Database *db, struct Character *character)
 {
     int character_id = -1;
     struct CharacterRecord *existing = Database_getCharacterByName(db, character->name);
@@ -119,8 +119,14 @@ void Character_save(struct Database *db, struct Character *character)
             character->stats,
             character->numStats
         );
-        character_id = Database_createCharacter(db, record);
+        record->id = Database_getNextIndex(db, CHARACTERS);
+        enum MorkResult res = Database_createCharacter(db, record);
+        character_id = record->id;
         free(record);
+        if (res != MORK_OK) {
+            log_err("Failed to save character record");
+            return -1;
+        }
     } else {
         // Update
         existing->level = character->level;
@@ -133,16 +139,21 @@ void Character_save(struct Database *db, struct Character *character)
             existing->stats = SET_STAT(existing->stats, i, character->stats[i]);
         }
 
-        character_id = Database_updateCharacter(db, existing, existing->id);
+        enum MorkResult res = Database_updateCharacter(db, existing);
+        if (res != MORK_OK) {
+            log_err("Failed to update character record");
+            return -1;
+        }
+        character_id = existing->id;
     }
 
     // Save inventory
     check(Inventory_save(db, character_id, character->inventory) != -1, "Failed to save inventory");\
-    return;
+    return character_id;
 
 error:
 
-    return;
+    return -1;
 }
 
 struct Character *Character_load(struct Database *db, char *name)

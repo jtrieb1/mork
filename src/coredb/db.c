@@ -95,10 +95,10 @@ error:
     return 0;
 }
 
-void Database_open(struct Database *db, const char *path)
+enum MorkResult Database_open(struct Database *db, const char *path)
 {
-    assert(db != NULL);
-    assert(path != NULL);
+    if (db == NULL) { return MORK_ERROR_DB_NULL; }
+    if (path == NULL) { return MORK_ERROR_DB_INVALID_PATH; }
 
     db->file = fopen(path, "r+");
     check(db->file, "Failed to open file: %s", path);
@@ -109,7 +109,7 @@ void Database_open(struct Database *db, const char *path)
     if (fseek(db->file, 0, SEEK_END) == 0) {
         long size = ftell(db->file);
         if (size == 0) {
-            return;
+            return MORK_OK;
         }
     }
 
@@ -121,29 +121,34 @@ void Database_open(struct Database *db, const char *path)
         fseek(db->file, table_offset(tbl), SEEK_SET);
         check(fread(db->tables[tbl], table_size(tbl), 1, db->file), "Failed to read table %d", tbl);
     }
+    return MORK_OK;
 
 error:
-    return;
+    return MORK_ERROR_DB;
 }
 
-void Database_close(struct Database *db)
+enum MorkResult Database_close(struct Database *db)
 {
-    assert(db != NULL);
+    if (db == NULL) { return MORK_ERROR_DB_NULL; }
+    
     if (db->initialized != 1) {
         Database_init(db);
     }
 
     if (db->file) {
         // Make sure we write out to the file before closing it
-        Database_flush(db);
+        enum MorkResult res = Database_flush(db);
+        if (res != MORK_OK) { return res; }
         fclose(db->file);
         db->file = NULL;
     }
+
+    return MORK_OK;
 }
 
-void Database_flush(struct Database *db)
+enum MorkResult Database_flush(struct Database *db)
 {
-    assert(db != NULL);
+    if (db == NULL) { return MORK_ERROR_DB_NULL; }
 
     // Write the entire database to disk
     for (enum Table tbl = 0; tbl < MAX_TABLES; tbl++) {
@@ -156,6 +161,7 @@ void Database_flush(struct Database *db)
         // Just to be extra sure
         fflush(db->file);
     }
+    return MORK_OK;
 }
 
 struct Database *Database_create()
@@ -165,7 +171,7 @@ struct Database *Database_create()
 
     db->file = NULL;
     db->initialized = 0;
-    for (enum Table tbl = 0; tbl < MAX_TABLES; ++tbl) {
+    for (enum Table tbl = 0; tbl < MAX_TABLES; tbl++) {
         db->table_index_counters[tbl] = 1;
     }
 
@@ -179,46 +185,51 @@ error:
     return NULL;
 }
 
-void Database_destroy(struct Database *db)
+enum MorkResult Database_destroy(struct Database *db)
 {
-    assert(db != NULL);
+    if (db == NULL) { return MORK_ERROR_DB_NULL; }
 
     // Make sure we close before we destroy
-    Database_close(db);
+    enum MorkResult close_result = Database_close(db);
+    if (close_result != MORK_OK) { return close_result; }
 
     for (enum Table tbl = 0; tbl < MAX_TABLES; tbl++) {
+        enum MorkResult res = MORK_OK;
+
         switch (tbl) {
             case CHARACTERS:
                 if (db->tables[tbl] ==  NULL) break;
-                CharacterTable_destroy((struct CharacterTable *)db->tables[tbl]);
+                res = CharacterTable_destroy((struct CharacterTable *)db->tables[tbl]);
                 break;
             case DESCRIPTION:
                 if (db->tables[tbl] == NULL) break;
-                DescriptionTable_destroy((struct DescriptionTable *)db->tables[tbl]);
+                res = DescriptionTable_destroy((struct DescriptionTable *)db->tables[tbl]);
                 break;
             case DIALOG:
                 if (db->tables[tbl] == NULL) break;
-                DialogTable_destroy((struct DialogTable *)db->tables[tbl]);
+                res = DialogTable_destroy((struct DialogTable *)db->tables[tbl]);
                 break;
             case INVENTORY:
                 if (db->tables[tbl] == NULL) break;
-                InventoryTable_destroy((struct InventoryTable *)db->tables[tbl]);
+                res = InventoryTable_destroy((struct InventoryTable *)db->tables[tbl]);
                 break;
             case ITEMS:
                 if (db->tables[tbl] == NULL) break;
-                ItemTable_destroy((struct ItemTable *)db->tables[tbl]);
+                res = ItemTable_destroy((struct ItemTable *)db->tables[tbl]);
                 break;
             case LOCATIONS:
                 if (db->tables[tbl] == NULL) break;
-                LocationTable_destroy((struct LocationTable *)db->tables[tbl]);
+                res = LocationTable_destroy((struct LocationTable *)db->tables[tbl]);
                 break;
             default:
-                sentinel("Unknown table: %d", tbl);
+                return MORK_ERROR_DB;
         }
+
+        if (res != MORK_OK) { return res; }
     }
 
-error:
     free(db);
+    return MORK_OK;
 }
 
 void *Database_get(struct Database *db, enum Table table)
@@ -232,30 +243,80 @@ error:
     return NULL;
 }
 
-void Database_set(struct Database *db, enum Table table, void *data)
+enum MorkResult Database_set(struct Database *db, enum Table table, void *data)
 {
-    check(db != NULL, "Database is NULL");
-    check(table >= 0 && table < MAX_TABLES, "Invalid table: %d", table);
+    if (db == NULL) { return MORK_ERROR_DB_NULL; }
+    if (table < 0 || table >= MAX_TABLES) { return MORK_ERROR_DB_INVALID_DATA; }
 
     db->tables[table] = data;
-
-error:
-    return;
+    return MORK_OK;
 }
 
-void Database_write(struct Database *db, enum Table table)
+enum MorkResult Database_write(struct Database *db, enum Table table)
 {
-    check(db != NULL, "Database is NULL");
+    if (db == NULL) { return MORK_ERROR_DB_NULL; }
+    if (table < 0 || table >= MAX_TABLES) { return MORK_ERROR_DB_INVALID_DATA; }
+    if (db->file == NULL) { return MORK_ERROR_DB_FILE_NULL; }
+
+    // We know the sizes of the individual tables, so we can write them directly via offset writes
+    int seekres  = fseek(db->file, table_offset(table), SEEK_SET);
+    if (seekres != 0) { return MORK_ERROR_DB_FILE_SEEK; }
+
+    size_t writeres = fwrite(db->tables[table], table_size(table), 1, db->file);
+    if (writeres != table_size(table)) { return MORK_ERROR_DB_FILE_WRITE; }
+    return MORK_OK;
+}
+
+enum MorkResult Database_delete(struct Database *db, enum Table table)
+{
+    if (db == NULL) { return MORK_ERROR_DB_NULL; }
     check(table >= 0 && table < MAX_TABLES, "Invalid table: %d", table);
 
-    if (db->file) {
-        // We know the sizes of the individual tables, so we can write them directly via offset writes
-        fseek(db->file, table_offset(table), SEEK_SET);
-        fwrite(db->tables[table], table_size(table), 1, db->file);
+    switch (table) {
+        case CHARACTERS:
+            return CharacterTable_destroy((struct CharacterTable *)db->tables[CHARACTERS]);
+        case DESCRIPTION:
+            return DescriptionTable_destroy((struct DescriptionTable *)db->tables[DESCRIPTION]);
+        case DIALOG:
+            return DialogTable_destroy((struct DialogTable *)db->tables[DIALOG]);
+        case INVENTORY:
+            return InventoryTable_destroy((struct InventoryTable *)db->tables[INVENTORY]);
+        case ITEMS:
+            return ItemTable_destroy((struct ItemTable *)db->tables[ITEMS]);
+        case LOCATIONS:
+            return LocationTable_destroy((struct LocationTable *)db->tables[LOCATIONS]);
+        default:
+            return MORK_ERROR_DB_INVALID_DATA;
     }
 
 error:
-    return;
+    return MORK_ERROR_DB;
+}
+
+enum MorkResult Database_print(struct Database *db, enum Table table)
+{
+    check(db != NULL, "Database is NULL");
+    check(table >= 0 && table < MAX_TABLES, "Invalid table: %d", table);
+
+    switch (table) {
+        case CHARACTERS:
+            return CharacterTable_print((struct CharacterTable *)db->tables[CHARACTERS]);
+        case DESCRIPTION:
+            return DescriptionTable_print((struct DescriptionTable *)db->tables[DESCRIPTION]);
+        case DIALOG:
+            return DialogTable_print((struct DialogTable *)db->tables[DIALOG]);
+        case INVENTORY:
+            return InventoryTable_print((struct InventoryTable *)db->tables[INVENTORY]);
+        case ITEMS:
+            return ItemTable_list((struct ItemTable *)db->tables[ITEMS]);
+        case LOCATIONS:
+            return LocationTable_print((struct LocationTable *)db->tables[LOCATIONS]);
+        default:
+            return MORK_ERROR_DB_INVALID_DATA;
+    }
+
+error:
+    return MORK_ERROR_DB;
 }
 
 unsigned int Database_getNextIndex(struct Database *db, enum Table table)
@@ -294,52 +355,43 @@ error:
     return NULL;
 }
 
-int Database_createCharacter(struct Database *db, struct CharacterRecord *stats)
+enum MorkResult Database_createCharacter(struct Database *db, struct CharacterRecord *stats)
 {
-    check(db != NULL, "Expected a non-null database.");
+    if (db == NULL) { return MORK_ERROR_DB_NULL; }
+    if (stats == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
 
     struct CharacterTable *table = db->tables[CHARACTERS];
-    check(table != NULL, "Character stats table is not initialized.");
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
 
-    stats->id = Database_getNextIndex(db, CHARACTERS);
-    unsigned char idx = CharacterTable_newRow(table, stats);
-    return (int)idx;
-
-error:
-    return -1;
+    return CharacterTable_newRow(table, stats);
 }
 
-int Database_updateCharacter(struct Database *db, struct CharacterRecord *stats, int id)
+enum MorkResult Database_updateCharacter(struct Database *db, struct CharacterRecord *stats)
 {
-    check(db != NULL, "Expected a non-null database.");
+    if (db == NULL) { return MORK_ERROR_DB_NULL; }
+    if (stats == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
 
     struct CharacterTable *table = db->tables[CHARACTERS];
-    check(table != NULL, "Character stats table is not initialized.");
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
 
-    unsigned char idx = CharacterTable_update(table, stats, id);
-
-    return (int)idx;
-
-error:
-    return -1;
+    return CharacterTable_update(table, stats);
 }
 
-void Database_deleteCharacter(struct Database *db, int id)
+enum MorkResult Database_deleteCharacter(struct Database *db, int id)
 {
-    check(db != NULL, "Expected a non-null database.");
+    if (db == NULL) { return MORK_ERROR_DB_NULL; }
+    if (id <= 0) { return MORK_ERROR_DB_INVALID_ID; }
 
     struct CharacterTable *table = db->tables[CHARACTERS];
-    check(table != NULL, "Character stats table is not initialized.");
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
 
-    CharacterTable_delete(table, id);
-
-error:
-    return;
+    return CharacterTable_delete(table, id);
 }
 
 struct DialogRecord *Database_getDialog(struct Database *db, int id)
 {
     check(db != NULL, "Expected a non-null database.");
+    check(id > 0, "Expected a valid ID.");
 
     struct DialogTable *table = db->tables[DIALOG];
     check(table != NULL, "Dialog table is not initialized.");
@@ -350,37 +402,43 @@ error:
     return NULL;
 }
 
-int Database_createDialog(struct Database *db, struct DialogRecord *dialog)
+enum MorkResult Database_createDialog(struct Database *db, struct DialogRecord *dialog)
 {
-    check(db != NULL, "Expected a non-null database.");
+    if (db == NULL) { return MORK_ERROR_DB_NULL; }
+    if (dialog == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
 
     struct DialogTable *table = db->tables[DIALOG];
-    check(table != NULL, "Dialog table is not initialized");
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
 
-    unsigned short id = DialogTable_newRow(table, dialog); // newRow takes ownership of dialog
-    return (int)id;
-
-error:
-    return -1;
+    return DialogTable_newRow(table, dialog);
 }
 
-int Database_updateDialog(struct Database *db, struct DialogRecord *dialog, int id)
+enum MorkResult Database_updateDialog(struct Database *db, struct DialogRecord *dialog)
 {
-    check(db != NULL, "Expected a non-null database.");
+    if (db == NULL) { return MORK_ERROR_DB_NULL; }
+    if (dialog == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
 
     struct DialogTable *table = db->tables[DIALOG];
-    check(table != NULL, "Dialog table is not initialized");
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
 
-    check(DialogTable_update(table, dialog, id) == id, "Update returned new ID"); // update takes ownership of dialog
-    return id;
+    return DialogTable_update(table, dialog);
+}
 
-error:
-    return -1;
+enum MorkResult Database_deleteDialog(struct Database *db, int id)
+{
+    if (db == NULL) { return MORK_ERROR_DB_NULL; }
+    if (id <= 0) { return MORK_ERROR_DB_INVALID_ID; }
+
+    struct DialogTable *table = db->tables[DIALOG];
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
+
+    return DialogTable_delete(table, id);
 }
 
 struct ItemRecord *Database_getItem(struct Database *db, int id)
 {
     check(db != NULL, "Expected a non-null database.");
+    check(id > 0, "Expected a valid ID.");
 
     struct ItemTable *table = db->tables[ITEMS];
     check(table != NULL, "Item table is not initialized.");
@@ -394,6 +452,7 @@ error:
 struct ItemRecord *Database_getItemByName(struct Database *db, char *name)
 {
     check(db != NULL, "Expected a non-null database.");
+    check(name != NULL && strcmp(name, "") != 0, "Expected a valid name");
 
     struct ItemTable *table = db->tables[ITEMS];
     check(table != NULL, "Item table is not initialized.");
@@ -404,53 +463,32 @@ error:
     return NULL;
 }
 
-
-struct ItemRecord *Database_getOrCreateItem(struct Database *db, char *name)
+enum MorkResult Database_createItem(struct Database *db, struct ItemRecord *item)
 {
-    struct ItemRecord *item = Database_getItemByName(db, name);
-    if (item == NULL) {
-        int id = Database_getNextIndex(db, ITEMS);
-        item = ItemRecord_create(id, name, 0);
-        Database_createItem(db, item);
-        free(item);
-        item = Database_getItem(db, id);
-    }
-    return item;
-}
-
-int Database_createItem(struct Database *db, struct ItemRecord *item)
-{
-    check(db != NULL, "Expected a non-null database.");
+    if (db == NULL) { return MORK_ERROR_DB_NULL; }
+    if (item == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
 
     struct ItemTable *table = db->tables[ITEMS];
-    check(table != NULL, "Item table is not initialized.");
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
 
-    item->id = Database_getNextIndex(db, ITEMS);
-    unsigned short idx = ItemTable_newRow(table, item);
-    return (int)idx;
-
-error:
-    return -1;
+    return ItemTable_newRow(table, item);
 }
 
-int Database_updateItem(struct Database *db, struct ItemRecord *item, int id)
+enum MorkResult Database_updateItem(struct Database *db, struct ItemRecord *item)
 {
-    check(db != NULL, "Expected a non-null database.");
-
+    if (db == NULL) { return MORK_ERROR_DB_NULL; }
+    if (item == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
+    
     struct ItemTable *table = db->tables[ITEMS];
-    check(table != NULL, "Item table is not initialized.");
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
 
-    item->id = id;
-    ItemTable_update(table, item);
-    return id;
-
-error:
-    return -1;
+    return ItemTable_update(table, item);
 }
 
 struct DescriptionRecord *Database_getDescription(struct Database *db, int id)
 {
     check(db != NULL, "Expected a non-null database.");
+    check(id > 0, "Expected a valid ID.");
 
     struct DescriptionTable *table = db->tables[DESCRIPTION];
     check(table != NULL, "Description table is not initialized.");
@@ -464,6 +502,7 @@ error:
 struct DescriptionRecord *Database_getDescriptionByPrefix(struct Database *db, char *prefix)
 {
     check(db != NULL, "Expected a non-null database.");
+    check(prefix != NULL, "Expected a valid prefix");
 
     struct DescriptionTable *table = db->tables[DESCRIPTION];
     check(table != NULL, "Description table is not initialized.");
@@ -477,6 +516,7 @@ error:
 struct DescriptionRecord *Database_getOrCreateDescription(struct Database *db, char *prefix)
 {
     check(db != NULL, "Expected a non-null database.");
+    check(prefix != NULL, "Expected a valid prefix");
 
     struct DescriptionTable *table = db->tables[DESCRIPTION];
     check(table != NULL, "Description table is not initialized.");
@@ -495,52 +535,44 @@ error:
     return NULL;
 }
 
-int Database_createDescription(struct Database *db, struct DescriptionRecord *desc)
+enum MorkResult Database_createDescription(struct Database *db, struct DescriptionRecord *desc)
 {
-    check(db != NULL, "Expected a non-null database.");
+    if (db == NULL) { return MORK_ERROR_DB_NULL; }
+    if (desc == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
 
     struct DescriptionTable *table = db->tables[DESCRIPTION];
-    check(table != NULL, "Description table is not initialized.");
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
 
     desc->id = Database_getNextIndex(db, DESCRIPTION);
-    unsigned short idx = DescriptionTable_insert(table, desc);
-    return (int)idx;
-
-error:
-    return -1;
+    return DescriptionTable_insert(table, desc);
 }
 
-int Database_updateDescription(struct Database *db, struct DescriptionRecord *desc, int id)
+enum MorkResult Database_updateDescription(struct Database *db, struct DescriptionRecord *desc)
 {
-    check(db != NULL, "Expected a non-null database.");
+    if (db == NULL) { return MORK_ERROR_DB_NULL; }
+    if (desc == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
 
     struct DescriptionTable *table = db->tables[DESCRIPTION];
-    check(table != NULL, "Description table is not initialized.");
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
 
-    desc->id = id;
-    DescriptionTable_update(table, desc, id);
-    return id;
-
-error:
-    return -1;
+    return DescriptionTable_update(table, desc);
 }
 
-void Database_deleteDescription(struct Database *db, int id)
+enum MorkResult Database_deleteDescription(struct Database *db, int id)
 {
-    check(db != NULL, "Expected a non-null database.");
+    if (db == NULL) { return MORK_ERROR_DB_NULL; }
+    if (id <= 0) { return MORK_ERROR_DB_INVALID_ID; }
 
     struct DescriptionTable *table = db->tables[DESCRIPTION];
-    check(table != NULL, "Description table is not initialized.");
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
 
-    DescriptionTable_delete(table, id);
-
-error:
-    return;
+    return DescriptionTable_delete(table, id);
 }
 
 struct InventoryRecord *Database_getInventory(struct Database *db, int id)
 {
     check(db != NULL, "Expected a non-null database.");
+    check(id > 0, "Expected a valid ID.");
 
     struct InventoryTable *table = db->tables[INVENTORY];
     check(table != NULL, "Inventory table is not initialized.");
@@ -554,6 +586,7 @@ error:
 struct InventoryRecord *Database_getInventoryByOwner(struct Database *db, char *owner)
 {
     check(db != NULL, "Expected a non-null database.");
+    check(owner != NULL && strcmp(owner, "") != 0, "Expected a valid owner.");
 
     struct InventoryTable *table = db->tables[INVENTORY];
     check(table != NULL, "Inventory table is not initialized.");
@@ -567,38 +600,41 @@ error:
     return NULL;
 }
 
-int Database_createInventory(struct Database *db, char *owner)
+enum MorkResult Database_createInventory(struct Database *db, char *owner)
 {
-    check(db != NULL, "Expected a non-null database.");
+    if (db == NULL) { return MORK_ERROR_DB_NULL; }
+    if (owner == NULL || strcmp(owner, "") == 0) { return MORK_ERROR_DB_INVALID_DATA; }
 
     struct InventoryTable *table = db->tables[INVENTORY];
-    check(table != NULL, "Inventory table is not initialized.");
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
 
     struct CharacterRecord *owner_record = Database_getCharacterByName(db, owner);
-    check(owner_record != NULL, "Character stats record not found.");
+    if (owner_record == NULL) { return MORK_ERROR_DB_NOT_FOUND; }
 
-    unsigned short idx = InventoryTable_add(table, owner_record->id, Database_getNextIndex(db, INVENTORY));
-    return (int)idx;
-
-error:
-    return -1;
+    return InventoryTable_add(table, owner_record->id, Database_getNextIndex(db, INVENTORY));
 }
 
-int Database_updateInventory(struct Database *db, struct InventoryRecord *record, int id)
+enum MorkResult Database_updateInventory(struct Database *db, struct InventoryRecord *record)
 {
-    check(db != NULL, "Expected a non-null database.");
+    if (db == NULL) { return MORK_ERROR_DB_NULL; }
+    if (record == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
 
     struct InventoryTable *table = db->tables[INVENTORY];
-    check(table != NULL, "Inventory table is not initialized.");
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
 
-    record->id = id;
-    id = InventoryTable_update(table, record, id);
-    return id;
-
-error:
-    return -1;
+    return InventoryTable_update(table, record);
 }
 
+enum MorkResult Database_deleteInventory(struct Database *db, int id)
+{
+    if (db == NULL) { return MORK_ERROR_DB_NULL; }
+    if (id <= 0) { return MORK_ERROR_DB_INVALID_ID; }
+
+    struct InventoryTable *table = db->tables[INVENTORY];
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
+
+    return InventoryTable_remove(table, id);
+}
 
 struct ItemRecord **Database_getItemsInInventory(struct Database *db, char *owner)
 {
@@ -621,22 +657,21 @@ error:
     return NULL;
 }
 
-void Database_deleteItem(struct Database *db, int id)
+enum MorkResult Database_deleteItem(struct Database *db, int id)
 {
-    check(db != NULL, "Expected a non-null database.");
+    if (db == NULL) { return MORK_ERROR_DB_NULL; }
+    if (id <= 0) { return MORK_ERROR_DB_INVALID_ID; }
 
     struct ItemTable *table = db->tables[ITEMS];
-    check(table != NULL, "Item table is not initialized.");
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
 
-    ItemTable_delete(table, id);
-
-error:
-    return;
+    return ItemTable_delete(table, id);
 }
 
 struct LocationRecord *Database_getLocation(struct Database *db, int id)
 {
     check(db != NULL, "Expected a non-null database.");
+    check(id > 0, "Expected a valid ID.");
 
     struct LocationTable *table = db->tables[LOCATIONS];
     check(table != NULL, "Location table is not initialized.");
@@ -646,9 +681,11 @@ struct LocationRecord *Database_getLocation(struct Database *db, int id)
 error:
     return NULL;
 }
+
 struct LocationRecord *Database_getLocationByName(struct Database *db, char *name)
 {
     check(db != NULL, "Expected a non-null database.");
+    check(name != NULL && strcmp(name, "") != 0, "Expected a valid name.");
 
     struct LocationTable *table = db->tables[LOCATIONS];
     check(table != NULL, "Location table is not initialized.");
@@ -659,45 +696,36 @@ error:
     return NULL;
 }
 
-int Database_createLocation(struct Database *db, struct LocationRecord *location)
+enum MorkResult Database_createLocation(struct Database *db, struct LocationRecord *location)
 {
-    check(db != NULL, "Expected a non-null database.");
+    if (db == NULL) { return MORK_ERROR_DB_NULL; }
+    if (location == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
 
     struct LocationTable *table = db->tables[LOCATIONS];
-    check(table != NULL, "Location table is not initialized.");
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
 
     location->id = Database_getNextIndex(db, LOCATIONS);
-    unsigned short idx = LocationTable_add(table, location);
-    return (int)idx;
-
-error:
-    return -1;
+    return LocationTable_add(table, location);
 }
 
-int Database_updateLocation(struct Database *db, struct LocationRecord *location, int id)
+enum MorkResult Database_updateLocation(struct Database *db, struct LocationRecord *location)
 {
-    check(db != NULL, "Expected a non-null database.");
+    if (db == NULL) { return MORK_ERROR_DB_NULL; }
+    if (location == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
 
     struct LocationTable *table = db->tables[LOCATIONS];
-    check(table != NULL, "Location table is not initialized.");
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
 
-    location->id = id;
-    id = LocationTable_update(table, location, id);
-    return id;
-
-error:
-    return -1;
+    return LocationTable_update(table, location);
 }
 
-void Database_deleteLocation(struct Database *db, int id)
+enum MorkResult Database_deleteLocation(struct Database *db, int id)
 {
-    check(db != NULL, "Expected a non-null database.");
+    if (db == NULL) { return MORK_ERROR_DB_NULL; }
+    if (id <= 0) { return MORK_ERROR_DB_INVALID_ID; }
 
     struct LocationTable *table = db->tables[LOCATIONS];
-    check(table != NULL, "Location table is not initialized.");
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
 
-    LocationTable_remove(table, id);
-
-error:
-    return;
+    return LocationTable_remove(table, id);
 }

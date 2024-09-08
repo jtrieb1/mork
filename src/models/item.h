@@ -19,16 +19,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #pragma once
 
 #include "../coredb/db.h"
+#include "../utils/error.h"
 
 struct Item {
     char name[MAX_NAME], description[MAX_DESCRIPTION];
 };
 
 struct Item *Item_create(const char* name, const char* description);
-void Item_destroy(struct Item* item);
+enum MorkResult Item_destroy(struct Item* item);
 
 struct Item *Item_clone(struct Item *source);
 
+// Returns ID of item on success, -1 on failure
 int Item_save(struct Database* db, struct Item* item);
 struct Item *Item_load(struct Database* db, int id);
 struct Item *Item_loadByName(struct Database* db, char* name);

@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "location.h"
 #include "row.h"
 
+#include <lcthw/dbg.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -27,6 +28,9 @@ struct LocationRecord *LocationRecord_create(
     unsigned short descriptionID
 )
 {
+    check(name != NULL && strcmp(name, "") != 0, "Expected a valid name");
+    check(descriptionID != 0, "Expected a valid ID");
+
     struct LocationRecord *record = (struct LocationRecord *)calloc(1, sizeof(struct LocationRecord));
     record->name = name;
     record->descriptionID = descriptionID;
@@ -35,16 +39,25 @@ struct LocationRecord *LocationRecord_create(
     memset(record->itemIDs, MAX_ITEMS, sizeof(unsigned short));
     memset(record->characterIDs, MAX_CHARACTERS, sizeof(unsigned short));
     return record;
+
+error:
+    return NULL;
 }
 
-void LocationRecord_destroy(struct LocationRecord *record)
+enum MorkResult LocationRecord_destroy(struct LocationRecord *record)
 {
-    if (record) free(record->name);
+    if (record == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
+
+    if (record->name) free(record->name);
     if (record) free(record);
+    
+    return MORK_OK;
 }
 
 struct LocationRecord *LocationRecord_copy(struct LocationRecord *record)
 {
+    check(record != NULL, "Expected valid LocationRecord");
+
     struct LocationRecord *copy = (struct LocationRecord *)calloc(1, sizeof(struct LocationRecord));
     copy->name = strdup(record->name);
     copy->descriptionID = record->descriptionID;
@@ -53,89 +66,132 @@ struct LocationRecord *LocationRecord_copy(struct LocationRecord *record)
     memcpy(copy->itemIDs, record->itemIDs, MAX_ITEMS * sizeof(unsigned short));
     memcpy(copy->characterIDs, record->characterIDs, MAX_CHARACTERS * sizeof(unsigned short));
     return copy;
+
+error:
+    return NULL;
 }
 
-void LocationRecord_setName(struct LocationRecord *record, char *name)
+enum MorkResult LocationRecord_setName(struct LocationRecord *record, char *name)
 {
-    free(record->name);
-    record->name = name;
+    if (record == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
+    if (name == NULL || strcmp(name, "") == 0) { return MORK_ERROR_DB_INVALID_DATA; }
+
+    if (record->name) free(record->name);
+    record->name = name != NULL ? name : "";
+
+    return MORK_OK;
 }
 
-void LocationRecord_setDescriptionID(struct LocationRecord *record, unsigned short descriptionID)
+enum MorkResult LocationRecord_setDescriptionID(struct LocationRecord *record, unsigned short descriptionID)
 {
+    if (record == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
+    if (descriptionID == 0) { return MORK_ERROR_DB_INVALID_ID; }
+
     record->descriptionID = descriptionID;
+
+    return MORK_OK;
 }
 
-void LocationRecord_addExitID(struct LocationRecord *record, unsigned short exitID)
+enum MorkResult LocationRecord_addExitID(struct LocationRecord *record, unsigned short exitID)
 {
+    if (record == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
+    if (exitID == 0) { return MORK_ERROR_DB_INVALID_ID; }
+
     for (int i = 0; i < MAX_EXITS; i++)
     {
         if (record->exitIDs[i] == 0)
         {
             record->exitIDs[i] = exitID;
-            return;
+            return MORK_OK;
         }
     }
+
+    return MORK_ERROR_DB_FIELD_FULL;
 }
 
-void LocationRecord_addItemID(struct LocationRecord *record, unsigned short itemID)
+enum MorkResult LocationRecord_addItemID(struct LocationRecord *record, unsigned short itemID)
 {
+    if (record == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
+    if (itemID == 0) { return MORK_ERROR_DB_INVALID_ID; }
+
     for (int i = 0; i < MAX_ITEMS; i++)
     {
         if (record->itemIDs[i] == 0)
         {
             record->itemIDs[i] = itemID;
-            return;
+            return MORK_OK;
         }
     }
+
+    return MORK_ERROR_DB_FIELD_FULL;
 }
 
-void LocationRecord_addCharacterID(struct LocationRecord *record, unsigned short characterID)
+enum MorkResult LocationRecord_addCharacterID(struct LocationRecord *record, unsigned short characterID)
 {
+    if (record == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
+    if (characterID == 0) { return MORK_ERROR_DB_INVALID_ID; }
+
     for (int i = 0; i < MAX_CHARACTERS; i++)
     {
         if (record->characterIDs[i] == 0)
         {
             record->characterIDs[i] = characterID;
-            return;
+            return MORK_OK;
         }
     }
+
+    return MORK_ERROR_DB_FIELD_FULL;
 }
 
-void LocationRecord_removeExitID(struct LocationRecord *record, unsigned short exitID)
+enum MorkResult LocationRecord_removeExitID(struct LocationRecord *record, unsigned short exitID)
 {
+    if (record == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
+    if (exitID == 0) { return MORK_ERROR_DB_INVALID_ID; }
+
     for (int i = 0; i < MAX_EXITS; i++)
     {
         if (record->exitIDs[i] == exitID)
         {
             record->exitIDs[i] = 0;
-            return;
+            return MORK_OK;
         }
     }
+
+    return MORK_ERROR_DB_NOT_FOUND;
 }
 
-void LocationRecord_removeItemID(struct LocationRecord *record, unsigned short itemID)
+enum MorkResult LocationRecord_removeItemID(struct LocationRecord *record, unsigned short itemID)
 {
+    if (record == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
+    if (itemID == 0) { return MORK_ERROR_DB_INVALID_ID; }
+
     for (int i = 0; i < MAX_ITEMS; i++)
     {
         if (record->itemIDs[i] == itemID)
         {
             record->itemIDs[i] = 0;
-            return;
+            return MORK_OK;
         }
     }
+
+    return MORK_ERROR_DB_NOT_FOUND;
 }
 
-void LocationRecord_removeCharacterID(struct LocationRecord *record, unsigned short characterID)
+enum MorkResult LocationRecord_removeCharacterID(struct LocationRecord *record, unsigned short characterID)
 {
+    if (record == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
+    if (characterID == 0) { return MORK_ERROR_DB_INVALID_ID; }
+
     for (int i = 0; i < MAX_CHARACTERS; i++)
     {
         if (record->characterIDs[i] == characterID)
         {
             record->characterIDs[i] = 0;
-            return;
+            return MORK_OK;
         }
     }
+
+    return MORK_ERROR_DB_NOT_FOUND;
 }
 
 struct LocationTable *LocationTable_create()
@@ -148,33 +204,46 @@ struct LocationTable *LocationTable_create()
     return table;
 }
 
-void LocationTable_destroy(struct LocationTable *table)
+enum MorkResult LocationTable_destroy(struct LocationTable *table)
 {
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
     free(table);
+    return MORK_OK;
 }
 
-unsigned short LocationTable_add(struct LocationTable *table, struct LocationRecord *record)
+enum MorkResult LocationTable_add(struct LocationTable *table, struct LocationRecord *record)
 {
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
+    if (record == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
+
     int next_idx = findNextRowToFill(table->locations, MAX_LOCATIONS);
     memcpy(&table->locations[next_idx], record, sizeof(struct LocationRecord));
-    return table->locations[next_idx].id;
+
+    return MORK_OK;
 }
 
-unsigned short LocationTable_update(struct LocationTable *table, struct LocationRecord *record, unsigned short id)
+enum MorkResult LocationTable_update(struct LocationTable *table, struct LocationRecord *record)
 {
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
+    if (record == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
+
     for (int i = 0; i < MAX_LOCATIONS; i++)
     {
-        if (table->locations[i].id == id)
+        if (table->locations[i].id == record->id)
         {
             memcpy(&table->locations[i], record, sizeof(struct LocationRecord));
-            return id;
+            return MORK_OK;
         }
     }
-    return 0;
+
+    return LocationTable_add(table, record);
 }
 
 struct LocationRecord *LocationTable_get(struct LocationTable *table, unsigned short id)
 {
+    check(table != NULL, "Expected a valid table");
+    check(id != 0, "Invalid ID given: 0");
+
     for (int i = 0; i < MAX_LOCATIONS; i++)
     {
         if (table->locations[i].id == id)
@@ -182,23 +251,33 @@ struct LocationRecord *LocationTable_get(struct LocationTable *table, unsigned s
             return &table->locations[i];
         }
     }
+
+error:
     return NULL;
 }
 
-void LocationTable_remove(struct LocationTable *table, unsigned short id)
+enum MorkResult LocationTable_remove(struct LocationTable *table, unsigned short id)
 {
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
+    if (id == 0) { return MORK_ERROR_DB_INVALID_ID; }
+
     for (int i = 0; i < MAX_LOCATIONS; i++)
     {
         if (table->locations[i].id == id)
         {
             LocationRecord_destroy(&table->locations[i]);
-            return;
+            return MORK_OK;
         }
     }
+
+    return MORK_ERROR_DB_NOT_FOUND;
 }
 
 struct LocationRecord *LocationTable_getByName(struct LocationTable *table, char *name)
 {
+    check(table != NULL, "Expected a valid table, got NULL");
+    check(name != NULL && strcmp(name, "") != 0, "Expected a name");
+
     for (int i = 0; i < MAX_LOCATIONS; i++)
     {
         if (strcmp(table->locations[i].name, name) == 0)
@@ -206,5 +285,23 @@ struct LocationRecord *LocationTable_getByName(struct LocationTable *table, char
             return &table->locations[i];
         }
     }
+
+error:
     return NULL;
+}
+
+enum MorkResult LocationTable_print(struct LocationTable *table)
+{
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
+
+    for (int i = 0; i < MAX_LOCATIONS; i++)
+    {
+        struct LocationRecord *record = &table->locations[i];
+        if (record->id != 0)
+        {
+            log_info("ID: %d, Name: %s, Description ID: %d", record->id, record->name, record->descriptionID);
+        }
+    }
+
+    return MORK_OK;
 }

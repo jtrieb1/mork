@@ -15,6 +15,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+#include "../../utils/error.h"
+
 #define MAX_EXITS 6
 #define MAX_ITEMS 10
 #define MAX_CHARACTERS 10
@@ -35,28 +37,30 @@ struct LocationRecord *LocationRecord_create(
     unsigned short descriptionID
 );
 
-void LocationRecord_destroy(struct LocationRecord *record);
+enum MorkResult LocationRecord_destroy(struct LocationRecord *record);
 
 struct LocationRecord *LocationRecord_copy(struct LocationRecord *record);
 
-void LocationRecord_setName(struct LocationRecord *record, char *name);
-void LocationRecord_setDescriptionID(struct LocationRecord *record, unsigned short descriptionID);
-void LocationRecord_addExitID(struct LocationRecord *record, unsigned short exitID);
-void LocationRecord_addItemID(struct LocationRecord *record, unsigned short itemID);
-void LocationRecord_addCharacterID(struct LocationRecord *record, unsigned short characterID);
-void LocationRecord_removeExitID(struct LocationRecord *record, unsigned short exitID);
-void LocationRecord_removeItemID(struct LocationRecord *record, unsigned short itemID);
-void LocationRecord_removeCharacterID(struct LocationRecord *record, unsigned short characterID);
+enum MorkResult LocationRecord_setName(struct LocationRecord *record, char *name);
+enum MorkResult LocationRecord_setDescriptionID(struct LocationRecord *record, unsigned short descriptionID);
+enum MorkResult LocationRecord_addExitID(struct LocationRecord *record, unsigned short exitID);
+enum MorkResult LocationRecord_addItemID(struct LocationRecord *record, unsigned short itemID);
+enum MorkResult LocationRecord_addCharacterID(struct LocationRecord *record, unsigned short characterID);
+enum MorkResult LocationRecord_removeExitID(struct LocationRecord *record, unsigned short exitID);
+enum MorkResult LocationRecord_removeItemID(struct LocationRecord *record, unsigned short itemID);
+enum MorkResult LocationRecord_removeCharacterID(struct LocationRecord *record, unsigned short characterID);
 
 struct LocationTable {
     struct LocationRecord locations[MAX_LOCATIONS];
 };
 
 struct LocationTable *LocationTable_create();
-void LocationTable_destroy(struct LocationTable *table);
+enum MorkResult LocationTable_destroy(struct LocationTable *table);
 
-unsigned short LocationTable_add(struct LocationTable *table, struct LocationRecord *record);
-unsigned short LocationTable_update(struct LocationTable *table, struct LocationRecord *record, unsigned short id);
+enum MorkResult LocationTable_add(struct LocationTable *table, struct LocationRecord *record);
+enum MorkResult LocationTable_update(struct LocationTable *table, struct LocationRecord *record);
 struct LocationRecord *LocationTable_get(struct LocationTable *table, unsigned short id);
-void LocationTable_remove(struct LocationTable *table, unsigned short id);
+enum MorkResult LocationTable_remove(struct LocationTable *table, unsigned short id);
 struct LocationRecord *LocationTable_getByName(struct LocationTable *table, char *name);
+
+enum MorkResult LocationTable_print(struct LocationTable *table);

@@ -24,16 +24,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdlib.h>
 
 /**
- * @brief Quick and dirty way to create a default description record.
- * 
- * @return struct DescriptionRecord* 
- */
-struct DescriptionRecord *DescriptionRecord_default()
-{
-    return DescriptionRecord_create(0, "", 0);
-}
-
-/**
  * @brief The preferred constructor for the DescriptionRecord struct.
  * 
  * @param id            The ID of the record
@@ -43,6 +33,10 @@ struct DescriptionRecord *DescriptionRecord_default()
  */
 struct DescriptionRecord *DescriptionRecord_create(unsigned short id, char *description, int next_id)
 {
+    check(id > 0, "Expected a valid id, got %u", id);
+    check(description != NULL && strcmp(description, "") != 0, "Expected a valid description, received empty");
+    check(next_id >= 0, "Expected either no next ID or a valid one, got %d", next_id);
+
     struct DescriptionRecord *entry = calloc(1, sizeof(struct DescriptionRecord));
     check_mem(entry);
 
@@ -62,10 +56,13 @@ error:
  * 
  * @param entry The record to destroy
  */
-void DescriptionRecord_destroy(struct DescriptionRecord *entry)
+enum MorkResult DescriptionRecord_destroy(struct DescriptionRecord *entry)
 {
+    if (entry == NULL) {
+        return MORK_ERROR_DB_RECORD_NULL;
+    }
     free(entry);
-    entry = NULL;
+    return MORK_OK;
 }
 
 /**
@@ -73,13 +70,14 @@ void DescriptionRecord_destroy(struct DescriptionRecord *entry)
  * 
  * @param table The table to initialize
  */
-void DescriptionTable_init(struct DescriptionTable *table) {
-    struct DescriptionRecord *record = DescriptionRecord_default();
+enum MorkResult DescriptionTable_init(struct DescriptionTable *table) {
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
+
     for (int i = 0; i < MAX_ROWS_DESC; i++) {
-        memcpy(&table->rows[i], record, sizeof(struct DescriptionRecord));
+        table->rows[i].id = 0;
+        table->rows[i].set = 0;
     }
-    free(record);
-    record = NULL;
+    return MORK_OK;
 }
 
 /**
@@ -104,40 +102,65 @@ error:
  * 
  * @param table The table to destroy
  */
-void DescriptionTable_destroy(struct DescriptionTable *table)
+enum MorkResult DescriptionTable_destroy(struct DescriptionTable *table)
 {
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
     free(table);
+    return MORK_OK;
 }
 
 /**
- * @brief Calculates the index of the next row to fill in the table. If no empty rows are found, the
- *        index of the row with the lowest ID is chosen.
+ * @brief Insert a record into the DescriptionTable.
  * 
- * @param table 
- * @return unsigned short The index of the next row to fill
+ * @param table  The table to insert into
+ * @param record The record to insert
+ * @return unsigned short The ID of the inserted record
  */
 
-unsigned short DescriptionTable_insert(struct DescriptionTable *table, struct DescriptionRecord *record)
+enum MorkResult DescriptionTable_insert(struct DescriptionTable *table, struct DescriptionRecord *record)
 {
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
+    if (record == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
+
     unsigned short idx = findNextRowToFill(table->rows, MAX_ROWS_DESC);
+
     memcpy(&table->rows[idx], record, sizeof(struct DescriptionRecord));
     table->rows[idx].set = 1;
-    return table->rows[idx].id;
+
+    return MORK_OK;
 }
 
-unsigned short DescriptionTable_update(struct DescriptionTable *table, struct DescriptionRecord *record, unsigned short id)
+/**
+ * @brief Update a record in the DescriptionTable.
+ * 
+ * @param table   The table to update
+ * @param record  The record to update
+ * @param id      The ID of the record to update, may differ from the id in record
+ * @return unsigned short 
+ */
+enum MorkResult DescriptionTable_update(struct DescriptionTable *table, struct DescriptionRecord *record)
 {
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
+    if (record == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
+
     for (int i = 0; i < MAX_ROWS_DESC; i++) {
-        if (table->rows[i].id == id) {
+        if (table->rows[i].id == record->id) {
             memcpy(&table->rows[i], record, sizeof(struct DescriptionRecord));
             table->rows[i].set = 1;
-            return table->rows[i].id;
+            return MORK_OK;
         }
     }
 
-    return 0;
+    return MORK_ERROR_DB_NOT_FOUND;
 }
 
+/**
+ * @brief Get a record from the DescriptionTable by ID.
+ * 
+ * @param table The table to search
+ * @param id    The ID of the record to find
+ * @return struct DescriptionRecord* 
+ */
 struct DescriptionRecord *DescriptionTable_get(struct DescriptionTable *table, unsigned short id)
 {
     check(id > 0, "ID is not set");
@@ -154,34 +177,80 @@ error:
     return NULL;
 }
 
+/**
+ * @brief Finds the description with the associated ID, then returns the next description in the chain.
+ * 
+ * @param table The table to search
+ * @param id    The ID of the current record
+ * @return struct DescriptionRecord* 
+ */
 struct DescriptionRecord *DescriptionTable_get_next(struct DescriptionTable *table, unsigned short id)
 {
+    check(table != NULL, "Expected table, got NULL");
+    check(id != 0, "Expected valid ID");
+
     for (int i = 0; i < MAX_ROWS_DESC; i++) {
         if (table->rows[i].id == id) {
             return &table->rows[table->rows[i].next_id];
         }
     }
 
+error:
     return NULL;
 }
 
+/**
+ * @brief Attempts to find a DescriptionRecord by matching against content.
+ * 
+ * @param table The table to search
+ * @param prefix The prefix to search for
+ * @return struct DescriptionRecord* 
+ */
 struct DescriptionRecord *DescriptionTable_get_by_prefix(struct DescriptionTable *table, char *prefix)
 {
+    check(table != NULL, "Expected table, got NULL");
+    check(prefix != NULL && strcmp(prefix, "") != 0, "Expected valid prefix, got empty or NULL");
+
     for (int i = 0; i < MAX_ROWS_DESC; i++) {
         if (strncmp(table->rows[i].description, prefix, strlen(prefix)) == 0) {
             return &table->rows[i];
         }
     }
 
+error:
     return NULL;
 }
 
-void DescriptionTable_delete(struct DescriptionTable *table, unsigned short id)
+/**
+ * @brief Deletes a record from the DescriptionTable.
+ * 
+ * @param table The table to delete from
+ * @param id    The ID of the record to delete
+ */
+enum MorkResult DescriptionTable_delete(struct DescriptionTable *table, unsigned short id)
 {
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
+    if (id == 0) { return MORK_ERROR_DB_INVALID_ID; }
+
     for (int i = 0; i < MAX_ROWS_DESC; i++) {
         if (table->rows[i].id == id) {
             table->rows[i].set = 0;
-            return;
+            return MORK_OK;
         }
     }
+    return MORK_ERROR_DB_NOT_FOUND;
+}
+
+enum MorkResult DescriptionTable_print(struct DescriptionTable *table)
+{
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
+
+    for (int i = 0; i < MAX_ROWS_DESC; i++) {
+        struct DescriptionRecord *rec = &table->rows[i];
+        if (rec->set == 1) {
+            log_info("ID: %d, Description: %s, Next ID: %d", rec->id, rec->description, rec->next_id);
+        }
+    }
+
+    return MORK_OK;
 }

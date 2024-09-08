@@ -260,7 +260,6 @@ enum MorkResult BaseGame_drop(struct Database *db, struct BaseGame *game, enum A
         return MORK_ERROR_MODEL_GAME_NULL;
     }
 
-    struct Location *location = game->current_location;
     struct Character *player = game->player;
 
     switch (targetkind) {

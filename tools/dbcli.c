@@ -1,6 +1,6 @@
-#include "src/coredb/db.h"
-#include "src/coredb/tables/character.h"
-#include "src/coredb/tables/description.h"
+#include "../src/coredb/db.h"
+#include "../src/coredb/tables/character.h"
+#include "../src/coredb/tables/description.h"
 #include <stdio.h>
 
 int location_create_menu(struct Database *db)
@@ -63,7 +63,7 @@ int location_update_menu(struct Database *db)
 
     struct DescriptionRecord *desc = DescriptionRecord_create(Database_getNextIndex(db, DESCRIPTION), description, 0);
     struct LocationRecord *new_record = LocationRecord_create(name, desc->id);
-    Database_updateLocation(db, new_record, id);
+    Database_updateLocation(db, new_record);
 
     DescriptionRecord_destroy(desc);
 
@@ -270,7 +270,7 @@ int character_update(struct Database *db)
 
     Database_createInventory(db, name); // Make sure to create an inventory for the character
 
-    Database_updateCharacter(db, new_record, id);
+    Database_updateCharacter(db, new_record);
 
     return 1;
 }
@@ -416,7 +416,7 @@ int item_update(struct Database *db)
         desc_record->id
     );
 
-    Database_updateItem(db, new_record, id);
+    Database_updateItem(db, new_record);
 
     return 1;
 }

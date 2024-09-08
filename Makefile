@@ -14,13 +14,15 @@ TESTS=$(patsubst %.c,%,$(TEST_SRC))
 TARGET=build/libmork.a
 SO_TARGET=$(patsubst %.a,%.so,$(TARGET))
 
-all: mork tests
+all: $(TARGET) $(SO_TARGET) tools tests
 
-mork: $(TARGET) $(SO_TARGET)
-	$(CC) -o bin/mork main.c $(CFLAGS) $(LIBS) $(TARGET)
+tools: dbcli
+
+demo: $(TARGET) $(SO_TARGET)
+	$(CC) -o bin/demo example/main.c $(CFLAGS) $(LIBS) $(TARGET)
 
 dbcli: $(TARGET) $(SO_TARGET)
-	$(CC) -o bin/dbcli dbcli.c $(CFLAGS) $(LIBS) $(TARGET)
+	$(CC) -o bin/dbcli tools/dbcli.c $(CFLAGS) $(LIBS) $(TARGET)
 
 dev: CFLAGS=-Wall -g -Isrc -Wall -Wextra $(OPTFLAGS)
 dev: all
@@ -44,7 +46,7 @@ tests: $(TESTS)
 
 # The Cleaner
 clean:
-	rm -rf build $(OBJECTS) $(TESTS)
+	rm -rf bin build $(OBJECTS) $(TESTS)
 	rm -f tests/tests.log
 	find . -name "*.gc*" -exec rm {} \;
 	rm -rf `find . -name "*.dSYM" -print`

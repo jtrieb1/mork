@@ -23,9 +23,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <lcthw/dbg.h>
 #include <sys/stat.h>
 
-#include "src/coredb/db.h"
-#include "src/models/character.h"
-#include "src/ui/terminal.h"
+#include <mork/coredb/db.h>
+#include <mork/models/character.h>
+#include <mork/ui/terminal.h>
 #include <sys/types.h>
 
 char *title = ""

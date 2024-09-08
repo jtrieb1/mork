@@ -5,18 +5,30 @@
 
 int location_create_menu(struct Database *db)
 {
+    int tmp_results = 0;
+
     printf("Create Location\n");
 
     char name[100];
     printf("Name: ");
-    scanf("%s", name);
+    tmp_results = scanf("%s", name);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     char description[MAX_DESCRIPTION];
     printf("Description: ");
-    scanf("%s", description);
+    tmp_results = scanf("%s", description);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     struct DescriptionRecord *desc = DescriptionRecord_create(Database_getNextIndex(db, DESCRIPTION), description, 0);
-    struct LocationRecord *record = LocationRecord_create(name, desc->id);
+    struct LocationRecord *record = LocationRecord_create(Database_getNextIndex(db, LOCATIONS), name, desc->id);
     Database_createLocation(db, record);
 
     DescriptionRecord_destroy(desc);
@@ -40,11 +52,18 @@ int location_list(struct Database *db)
 
 int location_update_menu(struct Database *db)
 {
+    int tmp_results = 0;
+
     printf("Update Location\n");
 
     unsigned short id;
     printf("ID: ");
-    scanf("%hu", &id);
+    tmp_results = scanf("%hu", &id);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     struct LocationRecord *record = Database_getLocation(db, id);
     if (record == NULL)
@@ -55,14 +74,24 @@ int location_update_menu(struct Database *db)
 
     char name[100];
     printf("Name: ");
-    scanf("%s", name);
+    tmp_results = scanf("%s", name);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     char description[MAX_DESCRIPTION];
     printf("Description: ");
-    scanf("%s", description);
+    tmp_results = scanf("%s", description);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     struct DescriptionRecord *desc = DescriptionRecord_create(Database_getNextIndex(db, DESCRIPTION), description, 0);
-    struct LocationRecord *new_record = LocationRecord_create(name, desc->id);
+    struct LocationRecord *new_record = LocationRecord_create(Database_getNextIndex(db, LOCATIONS), name, desc->id);
     Database_updateLocation(db, new_record);
 
     DescriptionRecord_destroy(desc);
@@ -72,11 +101,17 @@ int location_update_menu(struct Database *db)
 
 int location_delete_menu(struct Database *db)
 {
+    int tmp_results = 0;
     printf("Delete Location\n");
 
     unsigned short id;
     printf("ID: ");
-    scanf("%hu", &id);
+    tmp_results = scanf("%hu", &id);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     Database_deleteLocation(db, id);
 
@@ -85,6 +120,7 @@ int location_delete_menu(struct Database *db)
 
 int location_menu(struct Database *db)
 {
+    int tmp_results = 0;
     printf("Location Menu\n");
     printf("1. Create\n");
     printf("2. List\n");
@@ -94,7 +130,12 @@ int location_menu(struct Database *db)
 
     int choice = 0;
     printf("> ");
-    scanf("%d", &choice);
+    tmp_results = scanf("%d", &choice);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     switch (choice) {
         case 1:
@@ -119,47 +160,98 @@ int location_menu(struct Database *db)
 
 int character_create(struct Database *db)
 {
+    int tmp_results = 0;
     printf("Create Character\n");
 
     char name[100];
     printf("Name: ");
-    scanf("%s", name);
+    tmp_results = scanf("%s", name);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     unsigned char level = 0;
     printf("Level: ");
-    scanf("%hhu", &level);
+    tmp_results = scanf("%hhu", &level);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     unsigned short max_health = 0;
     printf("Max Health: ");
-    scanf("%hu", &max_health);
+    tmp_results = scanf("%hu", &max_health);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     unsigned short max_mana = 0;
     printf("Max Mana: ");
-    scanf("%hu", &max_mana);
+    tmp_results = scanf("%hu", &max_mana);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     unsigned short strength = 0;
     printf("Strength: ");
-    scanf("%hu", &strength);
+    tmp_results = scanf("%hu", &strength);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     unsigned short dexterity = 0;
     printf("Dexterity: ");
-    scanf("%hu", &dexterity);
+    tmp_results = scanf("%hu", &dexterity);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     unsigned short intelligence = 0;
     printf("Intelligence: ");
-    scanf("%hu", &intelligence);
+    tmp_results = scanf("%hu", &intelligence);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     unsigned short wisdom = 0;
     printf("Wisdom: ");
-    scanf("%hu", &wisdom);
+    tmp_results = scanf("%hu", &wisdom);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     unsigned short charisma = 0;
     printf("Charisma: ");
-    scanf("%hu", &charisma);
+    tmp_results = scanf("%hu", &charisma);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     unsigned short funkiness = 0;
     printf("Funkiness: ");
-    scanf("%hu", &funkiness);
+    tmp_results = scanf("%hu", &funkiness);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     struct CharacterRecord *record = CharacterRecord_create(
         name,
@@ -177,11 +269,17 @@ int character_create(struct Database *db)
 
 int character_read(struct Database *db)
 {
+    int tmp_results = 0;
     printf("Read Character\n");
 
     unsigned short id;
     printf("ID: ");
-    scanf("%hu", &id);
+    tmp_results = scanf("%hu", &id);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     struct CharacterRecord *record = Database_getCharacter(db, id);
     if (record == NULL)
@@ -206,11 +304,17 @@ int character_read(struct Database *db)
 
 int character_update(struct Database *db)
 {
+    int tmp_results = 0;
     printf("Update Character\n");
 
     unsigned short id;
     printf("ID: ");
-    scanf("%hu", &id);
+    tmp_results = scanf("%hu", &id);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     struct CharacterRecord *record = Database_getCharacter(db, id);
     if (record == NULL)
@@ -221,43 +325,93 @@ int character_update(struct Database *db)
 
     char name[100];
     printf("Name: ");
-    scanf("%s", name);
+    tmp_results = scanf("%s", name);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     unsigned char level = 0;
     printf("Level: ");
-    scanf("%hhu", &level);
+    tmp_results = scanf("%hhu", &level);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     unsigned short max_health = 0;
     printf("Max Health: ");
-    scanf("%hu", &max_health);
+    tmp_results = scanf("%hu", &max_health);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     unsigned short max_mana = 0;
     printf("Max Mana: ");
-    scanf("%hu", &max_mana);
+    tmp_results = scanf("%hu", &max_mana);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     unsigned short strength = 0;
     printf("Strength: ");
-    scanf("%hu", &strength);
+    tmp_results = scanf("%hu", &strength);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     unsigned short dexterity = 0;
     printf("Dexterity: ");
-    scanf("%hu", &dexterity);
+    tmp_results = scanf("%hu", &dexterity);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     unsigned short intelligence = 0;
     printf("Intelligence: ");
-    scanf("%hu", &intelligence);
+    tmp_results = scanf("%hu", &intelligence);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     unsigned short wisdom = 0;
     printf("Wisdom: ");
-    scanf("%hu", &wisdom);
+    tmp_results = scanf("%hu", &wisdom);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     unsigned short charisma = 0;
     printf("Charisma: ");
-    scanf("%hu", &charisma);
+    tmp_results = scanf("%hu", &charisma);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     unsigned short funkiness = 0;
     printf("Funkiness: ");
-    scanf("%hu", &funkiness);
+    tmp_results = scanf("%hu", &funkiness);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     struct CharacterRecord *new_record = CharacterRecord_create(
         name,
@@ -277,11 +431,17 @@ int character_update(struct Database *db)
 
 int character_delete(struct Database *db)
 {
+    int tmp_results = 0;
     printf("Delete Character\n");
 
     unsigned short id;
     printf("ID: ");
-    scanf("%hu", &id);
+    tmp_results = scanf("%hu", &id);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     Database_deleteCharacter(db, id);
 
@@ -290,6 +450,7 @@ int character_delete(struct Database *db)
 
 int character_menu(struct Database *db)
 {
+    int tmp_results = 0;
     printf("Character Menu\n");
     printf("1. Create\n");
     printf("2. Read\n");
@@ -299,7 +460,12 @@ int character_menu(struct Database *db)
 
     int choice = 0;
     printf("> ");
-    scanf("%d", &choice);
+    tmp_results = scanf("%d", &choice);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     switch (choice) {
         case 1:
@@ -326,15 +492,26 @@ int character_menu(struct Database *db)
 
 int item_create(struct Database *db)
 {
+    int tmp_results = 0;
     printf("Create Item\n");
 
     char name[100];
     printf("Name: ");
-    scanf("%s", name);
+    tmp_results = scanf("%s", name);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     char description[MAX_DESCRIPTION];
     printf("Description: ");
-    scanf("%s", description);
+    tmp_results = scanf("%s", description);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     struct DescriptionRecord *desc_record = DescriptionRecord_create(
         Database_getNextIndex(db, DESCRIPTION),
@@ -355,11 +532,17 @@ int item_create(struct Database *db)
 
 int item_read(struct Database *db)
 {
+    int tmp_results = 0;
     printf("Read Item\n");
 
     unsigned short id;
     printf("ID: ");
-    scanf("%hu", &id);
+    tmp_results = scanf("%hu", &id);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     struct ItemRecord *record = Database_getItem(db, id);
     if (record == NULL)
@@ -383,11 +566,17 @@ int item_read(struct Database *db)
 
 int item_update(struct Database *db)
 {
+    int tmp_results = 0;
     printf("Update Item\n");
 
     unsigned short id;
     printf("ID: ");
-    scanf("%hu", &id);
+    tmp_results = scanf("%hu", &id);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     struct ItemRecord *record = Database_getItem(db, id);
     if (record == NULL)
@@ -398,11 +587,21 @@ int item_update(struct Database *db)
 
     char name[100];
     printf("Name: ");
-    scanf("%s", name);
+    tmp_results = scanf("%s", name);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     char description[MAX_DESCRIPTION];
     printf("Description: ");
-    scanf("%s", description);
+    tmp_results = scanf("%s", description);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     struct DescriptionRecord *desc_record = DescriptionRecord_create(
         Database_getNextIndex(db, DESCRIPTION),
@@ -423,11 +622,17 @@ int item_update(struct Database *db)
 
 int item_delete(struct Database *db)
 {
+    int tmp_results = 0;
     printf("Delete Item\n");
 
     unsigned short id;
     printf("ID: ");
-    scanf("%hu", &id);
+    tmp_results = scanf("%hu", &id);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     Database_deleteItem(db, id);
 
@@ -436,6 +641,7 @@ int item_delete(struct Database *db)
 
 int item_menu(struct Database *db)
 {
+    int tmp_results = 0;
     printf("Item Menu\n");
     printf("1. Create\n");
     printf("2. Read\n");
@@ -445,7 +651,12 @@ int item_menu(struct Database *db)
 
     int choice = 0;
     printf("> ");
-    scanf("%d", &choice);
+    tmp_results = scanf("%d", &choice);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     switch (choice) {
         case 1:
@@ -473,6 +684,7 @@ int item_menu(struct Database *db)
 
 int table_menu(struct Database *db)
 {
+    int tmp_results = 0;
     printf("Table Menu\n");
     printf("1. Locations\n");
     printf("2. Characters\n");
@@ -481,7 +693,12 @@ int table_menu(struct Database *db)
 
     int choice = 0;
     printf("> ");
-    scanf("%d", &choice);
+    tmp_results = scanf("%d", &choice);
+
+    if (tmp_results == EOF)
+    {
+        return 0;
+    }
 
     switch (choice) {
         case 1:

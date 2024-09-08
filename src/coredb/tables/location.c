@@ -24,14 +24,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <string.h>
 
 struct LocationRecord *LocationRecord_create(
+    unsigned char id,
     char *name,
     unsigned short descriptionID
 )
 {
+    check(id != 0, "Expected a valid ID");
     check(name != NULL && strcmp(name, "") != 0, "Expected a valid name");
     check(descriptionID != 0, "Expected a valid ID");
 
     struct LocationRecord *record = (struct LocationRecord *)calloc(1, sizeof(struct LocationRecord));
+    record->id = id;
     record->name = name;
     record->descriptionID = descriptionID;
 

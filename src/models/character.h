@@ -47,5 +47,6 @@ struct Character *Character_clone(struct Character *source);
 
 int Character_save(struct Database *db, struct Character *character);
 struct Character *Character_load(struct Database *db, char *name);
+struct Character *Character_loadFromID(struct Database *db, unsigned char id);
 
 unsigned short Character_getStat(struct Character *character, unsigned char stat);

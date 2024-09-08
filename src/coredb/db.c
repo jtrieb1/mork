@@ -729,3 +729,50 @@ enum MorkResult Database_deleteLocation(struct Database *db, int id)
 
     return LocationTable_remove(table, id);
 }
+
+struct GameRecord *Database_getGame(struct Database *db, int id)
+{
+    check(db != NULL, "Expected a non-null database.");
+    check(id > 0, "Expected a valid ID.");
+
+    struct GameTable *table = db->tables[GAMES];
+    check(table != NULL, "Game table is not initialized.");
+
+    return GameTable_get(table, id);
+
+error:
+    return NULL;
+}
+
+enum MorkResult Database_createGame(struct Database *db, struct GameRecord *game)
+{
+    if (db == NULL) { return MORK_ERROR_DB_NULL; }
+    if (game == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
+
+    struct GameTable *table = db->tables[GAMES];
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
+
+    return GameTable_insert(table, game);
+}
+
+enum MorkResult Database_updateGame(struct Database *db, struct GameRecord *game)
+{
+    if (db == NULL) { return MORK_ERROR_DB_NULL; }
+    if (game == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
+
+    struct GameTable *table = db->tables[GAMES];
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
+
+    return GameTable_update(table, game);
+}
+
+enum MorkResult Database_deleteGame(struct Database *db, int id)
+{
+    if (db == NULL) { return MORK_ERROR_DB_NULL; }
+    if (id <= 0) { return MORK_ERROR_DB_INVALID_ID; }
+
+    struct GameTable *table = db->tables[GAMES];
+    if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
+
+    return GameTable_delete(table, id);
+}

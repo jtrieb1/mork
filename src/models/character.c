@@ -156,38 +156,57 @@ error:
     return -1;
 }
 
+struct Character *Character_fromRecord(struct Database *db, struct CharacterRecord rec)
+{
+    unsigned char *stats = (unsigned char *)calloc(rec.numStats, sizeof(unsigned char));
+    for (int i = 0; i < rec.numStats; i++) {
+        stats[i] = GET_STAT(rec.stats, i);
+    }
+
+    struct Character *character = Character_create(
+        rec.name,
+        rec.level,
+        stats,
+        rec.numStats
+    );
+    check(character, "Failed to create character");
+
+    character->level = rec.level;
+    character->experience = rec.experience;
+    character->health = GET_HEALTH(rec.health_and_mana);
+    character->max_health = GET_HEALTH(rec.max_health_and_mana);
+    character->mana = GET_MANA(rec.health_and_mana);
+    character->max_mana = GET_MANA(rec.max_health_and_mana);
+    memcpy(character->stats, stats, rec.numStats);
+    free(stats);
+
+    // Destroy the dummy inventory that was created during character creation
+    Inventory_destroy(character->inventory);
+    character->inventory = Inventory_load(db, rec.id);
+
+    return character;
+
+error:
+    return NULL;
+}
+
 struct Character *Character_load(struct Database *db, char *name)
 {
     struct CharacterRecord *record = Database_getCharacterByName(db, name);
     check(record != NULL, "Failed to load character record");
 
-    unsigned char *stats = (unsigned char *)calloc(record->numStats, sizeof(unsigned char));
-    for (int i = 0; i < record->numStats; i++) {
-        stats[i] = GET_STAT(record->stats, i);
-    }
+    return Character_fromRecord(db, *record);
 
-    struct Character *character = Character_create(
-        record->name,
-        record->level,
-        stats,
-        record->numStats
-    );
-    check(character, "Failed to create character");
+error:
+    return NULL;
+}
 
-    character->level = record->level;
-    character->experience = record->experience;
-    character->health = GET_HEALTH(record->health_and_mana);
-    character->max_health = GET_HEALTH(record->max_health_and_mana);
-    character->mana = GET_MANA(record->health_and_mana);
-    character->max_mana = GET_MANA(record->max_health_and_mana);
-    memcpy(character->stats, stats, record->numStats);
-    free(stats);
+struct Character *Character_loadFromID(struct Database *db, unsigned char id)
+{
+    struct CharacterRecord *record = Database_getCharacter(db, id);
+    check(record != NULL, "Failed to load character record");
 
-    // They get an inventory during creation, so destroy it
-    Inventory_destroy(character->inventory);
-    character->inventory = Inventory_load(db, record->id);
-
-    return character;
+    return Character_fromRecord(db, *record);
 
 error:
     return NULL;

@@ -23,17 +23,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "tables/character.h"
 #include "tables/description.h"
 #include "tables/dialog.h"
+#include "tables/games.h"
 #include "tables/inventory.h"
 #include "tables/items.h"
 #include "tables/location.h"
 #include <stdio.h>
 
-#define MAX_TABLES 6
+#define MAX_TABLES 7
 
 enum Table {
     CHARACTERS = 0,
     DESCRIPTION,
     DIALOG,
+    GAMES,
     INVENTORY,
     ITEMS,
     LOCATIONS
@@ -99,3 +101,8 @@ struct LocationRecord *Database_getLocationByName(struct Database *db, char *nam
 enum MorkResult Database_createLocation(struct Database *db, struct LocationRecord *location);
 enum MorkResult Database_updateLocation(struct Database *db, struct LocationRecord *location);
 enum MorkResult Database_deleteLocation(struct Database *db, int id);
+
+struct GameRecord *Database_getGame(struct Database *db, int id);
+enum MorkResult Database_createGame(struct Database *db, struct GameRecord *game);
+enum MorkResult Database_updateGame(struct Database *db, struct GameRecord *game);
+enum MorkResult Database_deleteGame(struct Database *db, int id);

@@ -21,11 +21,14 @@ enum MorkResult {
     MORK_ERROR_DB_FILE_READ, // Error reading from file
     MORK_ERROR_DB_FILE_WRITE, // Error writing to file
 
-    MORK_ERROR_DB_FAILED_CREATE, // Failed to create record
+    MORK_ERROR_DB_FAILED_CREATE, // Failed to create
+    MORK_ERROR_DB_FAILED_SAVE, // Failed to save
 
     // Model Errors
     MORK_ERROR_MODEL, // Generic model error
     MORK_ERROR_MODEL_ITEM_NULL, // Item is NULL
     MORK_ERROR_MODEL_INVENTORY_FULL, // Inventory is full
     MORK_ERROR_MODEL_INVENTORY_ITEM_NOT_FOUND, // Item not found in inventory
+    MORK_ERROR_MODEL_GAME_NULL, // Game is NULL
+    MORK_ERROR_MODEL_LOCATION_NULL, // Location is NULL
 };

@@ -33,6 +33,7 @@ struct LocationRecord {
 };
 
 struct LocationRecord *LocationRecord_create(
+    unsigned char id,
     char *name,
     unsigned short descriptionID
 );

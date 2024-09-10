@@ -19,7 +19,7 @@ all: $(TARGET) $(SO_TARGET) tools tests
 tools: dbcli
 
 demo: $(TARGET) $(SO_TARGET)
-	$(CC) -o bin/demo example/main.c $(CFLAGS) $(LIBS) $(TARGET)
+	$(CC) -o bin/demo example/main.c $(CFLAGS) $(LIBS) $(TARGET) example/gamedata.c
 
 dbcli: $(TARGET) $(SO_TARGET)
 	$(CC) -o bin/dbcli tools/dbcli.c $(CFLAGS) $(LIBS) $(TARGET)

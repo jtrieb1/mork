@@ -27,6 +27,8 @@ struct Inventory *Inventory_create()
     struct Inventory *inventory = calloc(1, sizeof(struct Inventory));
     check_mem(inventory);
 
+    inventory->id = 0;
+
     for (int i = 0; i < MAX_INVENTORY_ITEMS; i++) {
         inventory->items[i] = NULL;
     }
@@ -42,6 +44,8 @@ struct Inventory *Inventory_clone(struct Inventory *source)
 {
     struct Inventory *inventory = Inventory_create();
     check_mem(inventory);
+
+    inventory->id = source->id;
 
     for (int i = 0; i < MAX_INVENTORY_ITEMS; i++) {
         if (source->items[i] != NULL) {
@@ -167,36 +171,40 @@ enum MorkResult Inventory_print(struct Inventory *inventory)
     return MORK_OK;
 }
 
-int Inventory_save(struct Database *db, int owner_id, struct Inventory *inventory)
+struct InventoryRecord *Inventory_asInventoryRecord(struct Database *db, struct Inventory *inventory, unsigned short owner_id)
 {
-    struct InventoryRecord *record = NULL;
     struct CharacterRecord *owner = Database_getCharacter(db, owner_id);
-
-    check(owner != NULL, "Failed to get owner record");
-    record = Database_getInventoryByOwner(db, owner->name);
+    struct InventoryRecord *record = Database_getInventoryByOwner(db, owner->name);
     if (record == NULL) {
-        enum MorkResult res = Database_createInventory(db, owner->name);
-        if (res != MORK_OK) {
-            log_err("Failed to create inventory record");
-            goto error;
-        }
-        record = Database_getInventoryByOwner(db, owner->name);
-        return record->id;
-    } else {
-        for (int i = 0; i < MAX_INVENTORY_ITEMS; ++i) {
-            if (inventory->items[i] != NULL) {
-                record->item_ids[i] = Item_save(db, inventory->items[i]);
-            } else {
-                record->item_ids[i] = 0;
-            }
-        }
-        enum MorkResult res = Database_updateInventory(db, record);
-        if (res != MORK_OK) {
-            log_err("Failed to update inventory record");
-            goto error;
-        }
-        return record->id;
+        record = InventoryRecord_create(Database_getNextIndex(db, INVENTORY), owner_id);
     }
+
+    for (int i = 0; i < MAX_INVENTORY_ITEMS; i++) {
+        if (inventory->items[i] != NULL) {
+            record->item_ids[i] = inventory->items[i]->id;
+        }
+    }
+
+    return record;
+}
+
+int Inventory_save(struct Database *db, unsigned short owner, struct Inventory *inventory)
+{
+    struct CharacterRecord *owner_record = Database_getCharacter(db, owner);
+    check(owner_record != NULL, "Failed to load character record.");
+    struct InventoryRecord *record = Inventory_asInventoryRecord(db, inventory, owner);
+    check(record != NULL, "Failed to create inventory record.");
+
+    if (record->id == 0) {
+        record->id = Database_getNextIndex(db, INVENTORY);
+        enum MorkResult res = Database_createInventory(db, owner_record->name);
+        check(res == MORK_OK, "Failed to create inventory record.");
+    } else {
+        enum MorkResult res = Database_updateInventory(db, record);
+        check(res == MORK_OK, "Failed to update inventory record.");
+    }
+
+    return record->id;
 
 error:
     return -1;
@@ -212,6 +220,7 @@ struct Inventory *Inventory_load(struct Database *db, int owner_id)
     }
 
     struct Inventory *inventory = Inventory_create();
+    inventory->id = record->id;
 
     for (int i = 0; i < MAX_INVENTORY_ITEMS; i++) {
         if (record->item_ids[i] != 0) {

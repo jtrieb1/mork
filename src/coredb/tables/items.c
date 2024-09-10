@@ -31,7 +31,7 @@ struct ItemRecord *ItemRecord_create(unsigned short id, char *name, unsigned sho
     check_mem(record);
 
     record->id = id;
-    record->set = 1;
+    record->set = 0;
     strncpy(record->name, name, MAX_NAME);
     record->name[MAX_NAME - 1] = '\0';
     record->description_id = description_id;
@@ -85,6 +85,7 @@ enum MorkResult ItemTable_newRow(struct ItemTable *it, struct ItemRecord *record
 
     unsigned short idx = findNextRowToFill(it->rows, MAX_ROWS_ITEMS);
     memcpy(&it->rows[idx], record, sizeof(struct ItemRecord));
+    it->rows[idx].set = 1;
 
     return MORK_OK;
 }
@@ -97,6 +98,7 @@ enum MorkResult ItemTable_update(struct ItemTable *it, struct ItemRecord *record
     for (unsigned short i = 0; i < MAX_ROWS_ITEMS; i++) {
         if (it->rows[i].id == record->id) {
             memcpy(&it->rows[i], record, sizeof(struct ItemRecord));
+            it->rows[i].set = 1;
             return MORK_OK;
         }
     }

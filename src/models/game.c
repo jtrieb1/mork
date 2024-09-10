@@ -244,9 +244,9 @@ enum MorkResult BaseGame_take(struct Database *db, struct BaseGame *game, enum A
             break;
         case TARGET_ITEM:
             for (int i = 0; i < MAX_ITEMS; i++) {
-                if (strcmp(location->items[i].name, target) == 0) {
+                if (strcmp(location->items[i]->name, target) == 0) {
                     // Add item to player inventory
-                    Inventory_addItem(player->inventory, &location->items[i]);
+                    Inventory_addItem(player->inventory, location->items[i]);
                 }
             }
             break;
@@ -353,8 +353,8 @@ enum MorkResult BaseGame_look(struct Database *db, struct BaseGame *game, enum A
             break;
         case TARGET_ITEM:
             for (int i = 0; i < MAX_ITEMS; i++) {
-                if (strcmp(location->items[i].name, target) == 0) {
-                    printf("%s\n", location->items[i].description);
+                if (strcmp(location->items[i]->name, target) == 0) {
+                    printf("%s\n", location->items[i]->description);
                 }
             }
             break;

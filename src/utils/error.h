@@ -23,6 +23,8 @@ enum MorkResult {
 
     MORK_ERROR_DB_FAILED_CREATE, // Failed to create
     MORK_ERROR_DB_FAILED_SAVE, // Failed to save
+    MORK_ERROR_DB_FAILED_UPDATE, // Failed to updatem
+    MORK_ERROR_DB_FAILED_LOAD, // Failed to load
 
     // Model Errors
     MORK_ERROR_MODEL, // Generic model error
@@ -32,6 +34,7 @@ enum MorkResult {
     MORK_ERROR_MODEL_INVENTORY_ITEM_NOT_FOUND, // Item not found in inventory
     MORK_ERROR_MODEL_GAME_NULL, // Game is NULL
     MORK_ERROR_MODEL_LOCATION_NULL, // Location is NULL
+    MORK_ERROR_MODEL_LOCATION_FULL, // Location is full
 
     MORK_ERROR_MODEL_GAME_INPUT, // Error with game input
     MORK_ERROR_MODEL_GAME_PARSE // Error parsing game input

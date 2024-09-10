@@ -27,6 +27,8 @@ struct Item *Item_create(const char *name, const char *description)
     struct Item *item = malloc(sizeof(struct Item));
     check_mem(item);
 
+    item->id = 0;
+
     strncpy(item->name, name, MAX_NAME);
     item->name[MAX_NAME - 1] = '\0';
 
@@ -53,14 +55,14 @@ enum MorkResult Item_destroy(struct Item *item)
     return MORK_OK;
 }
 
-int Item_save(struct Database *db, struct Item *item)
+struct DescriptionRecord *Item_getDescriptionRecord(struct Database *db, struct Item *item)
 {
-    // Try to find description record
-    int description_id = -1;
+    // See if item description exists in database
     struct DescriptionRecord *descriptionRecord = Database_getDescriptionByPrefix(db, item->description);
+
     if (descriptionRecord == NULL) {
-        int nextDescriptionID =Database_getNextIndex(db, DESCRIPTION);
         // Description does not exist in DB, create it.
+        int nextDescriptionID = Database_getNextIndex(db, DESCRIPTION);
         descriptionRecord = DescriptionRecord_create(nextDescriptionID, item->description, 0);
         check(descriptionRecord != NULL, "Failed to create description record.");
 
@@ -69,42 +71,76 @@ int Item_save(struct Database *db, struct Item *item)
         if (res != MORK_OK) {
             log_err("Failed to create description record.");
             free(descriptionRecord);
-            return -1;
+            return NULL;
         }
-        description_id = descriptionRecord->id;
-        free(descriptionRecord);
-    } else {
-        description_id = descriptionRecord->id;
     }
 
-    struct ItemRecord *itemRecord = Database_getItemByName(db, item->name);
-    if (itemRecord == NULL) {
+    return descriptionRecord;
+
+error:
+    return NULL;
+}
+
+struct ItemRecord *Item_asItemRecord(struct Database *db, struct Item *item)
+{
+    struct DescriptionRecord *descriptionRecord = Item_getDescriptionRecord(db, item);
+    check(descriptionRecord != NULL, "Failed to get description record.");
+
+    struct ItemRecord *record = Database_getItemByName(db, item->name);
+    if (record == NULL) {
+        record = malloc(sizeof(struct ItemRecord));
+        check_mem(record);
+
+        record->id = 0;
+        strncpy(record->name, item->name, MAX_NAME);
+        record->name[MAX_NAME - 1] = '\0';
+        record->description_id = descriptionRecord->id;
+    }
+
+    return record;
+
+error:
+    return NULL;
+}
+
+int Item_save(struct Database *db, struct Item *item)
+{
+    if (item == NULL) {
+        log_err("Item is NULL");
+        return -1;
+    }
+    if (strcmp(item->name, "") == 0) {
+        log_err("Item name is empty");
+        return -1;
+    }
+
+    if (item->id == 0) {
         // Item does not exist in DB, create it.
-        int nextID = Database_getNextIndex(db, ITEMS);
+        int nextItemID = Database_getNextIndex(db, ITEMS);
+        item->id = nextItemID;
+        struct ItemRecord *record = Item_asItemRecord(db, item);
+        check(record != NULL, "Failed to create item record.");
+        record->id = nextItemID;
 
-        itemRecord = ItemRecord_create(nextID, item->name, description_id);
-        check(itemRecord != NULL, "Failed to create item record.");
-
-        itemRecord->id = nextID;
-        enum MorkResult res = Database_createItem(db, itemRecord);
-        free(itemRecord);
+        enum MorkResult res = Database_createItem(db, record);
         if (res != MORK_OK) {
             log_err("Failed to create item record.");
-
-            goto error;
+            return -1;
+        } else {
+            return item->id;
         }
-        return nextID;
     } else {
         // Item exists in DB, update it.
-        if (itemRecord->description_id != description_id) {
-            itemRecord->description_id = description_id;
-            enum MorkResult res = Database_updateItem(db, itemRecord);
-            if (res != MORK_OK) {
-                log_err("Failed to update item record.");
-                goto error;
-            }
-        }
-        return itemRecord->id;
+        struct ItemRecord *record = Item_asItemRecord(db, item);
+        check(record != NULL, "Failed to create item record.");
+
+        enum MorkResult res = Database_updateItem(db, record);
+        if (res != MORK_OK) {
+            log_err("Failed to update item record.");
+            return -1;
+        } 
+
+        return item->id;
     }
 
 error:

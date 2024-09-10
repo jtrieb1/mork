@@ -25,8 +25,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <mork/coredb/db.h>
 #include <mork/models/character.h>
+#include <mork/models/location.h>
+#include <mork/models/game.h>
 #include <mork/ui/terminal.h>
 #include <sys/types.h>
+
+#include "gamedata.h"
 
 char *title = ""
 "_______  _______  _______  _\n"
@@ -60,62 +64,6 @@ const char *dbname = "mork.db";
 
 struct Database *game_db = NULL;
 
-struct Character *player = NULL;
-
-// NPC characters
-struct Character *mork = NULL;
-struct Character *mindy = NULL;
-struct Character *frank = NULL;
-struct Character *earl = NULL;
-
-// Locations
-struct Location *start = NULL;
-struct Location *mnms = NULL;
-struct Location *diner = NULL;
-struct Location *forest = NULL;
-struct Location *pool = NULL;
-struct Location *spaceship = NULL;
-struct Location *ork = NULL;
-
-void initialize_characters()
-{
-    player = Character_create("You", 1, (unsigned char[6]){3,3,3,3,3,1}, 6);
-    mork = Character_load(game_db, "Mork");
-    mindy = Character_load(game_db, "Mindy");
-    frank= Character_load(game_db, "Frank");
-    earl = Character_load(game_db, "Earl");
-}
-
-void initialize_locations()
-{
-    start = Location_create("Your Apartment", "A small apartment mostly full of boxes");
-    mnms = Location_create("Mork and Mindy's Apt.", "A small place shared by Mork and Mindy");
-    diner = Location_create("The Diner", "A small diner with a jukebox");
-    forest = Location_create("The Forest", "A dark and spooky forest");
-    pool = Location_create("The Pool", "A cool aboveground pool");
-    spaceship = Location_create("The Spaceship", "A spaceship with a lot of buttons");
-    ork = Location_create("Ork", "The planet Ork, home of Mork");
-}
-
-void trash_characters()
-{
-    Character_destroy(player);
-    Character_destroy(mork);
-    Character_destroy(mindy);
-    Character_destroy(frank);
-    Character_destroy(earl);
-}
-
-void trash_locations()
-{
-    Location_destroy(start);
-    Location_destroy(diner);
-    Location_destroy(forest);
-    Location_destroy(pool);
-    Location_destroy(spaceship);
-    Location_destroy(ork);
-}
-
 void set_title_text_format()
 {
     set_text_bold();
@@ -128,12 +76,8 @@ void set_normal_text_format()
     set_text_white();
 }
 
-void setup()
+void setup_game_directory(char *full_path)
 {
-    char *full_path = malloc(strlen(dir_name) + strlen(dbname) + 2);
-    check_mem(full_path);
-    sprintf(full_path, "%s/%s", dir_name, dbname);
-
     // Check if game directory exists
     struct stat st = {0};
     if (stat(dir_name, &st) == 0) {
@@ -150,13 +94,34 @@ void setup()
         fclose(db_file);
     }
 
-    // Spin up database
+    return;
+
+error:
+    exit(1);
+}
+
+void create_db(char *full_path)
+{
     game_db = Database_create();
     Database_open(game_db, full_path);
-    check(game_db, "Could not open Mork database");
+    check(game_db != NULL, "Could not create database");
 
-    initialize_characters();
-    initialize_locations();
+    return;
+
+error:
+    exit(1);
+}
+
+void setup()
+{
+    char *full_path = malloc(strlen(dir_name) + strlen(dbname) + 2);
+    check_mem(full_path);
+    sprintf(full_path, "%s/%s", dir_name, dbname);
+
+    setup_game_directory(full_path);
+    create_db(full_path);
+    
+    populate_game(game_db);
 
     clear_screen();
 
@@ -186,14 +151,34 @@ void refresh()
 }
 
 void cleanup()
-{
-    trash_characters();
-    trash_locations();
-    
+{   
     if (game_db != NULL) {
         Database_destroy(game_db);
     }
     return;
+}
+
+struct Character *create_player_menu(struct Database *db)
+{
+    char *name = NULL;
+    unsigned int level = 1;
+    unsigned char stats[6] = {5, 5, 5, 5, 5, 10};
+    unsigned int numStats = 6;
+
+    refresh();
+    printf("Enter your character's name: ");
+    int res = scanf("%ms", &name);
+    check(res != EOF, "Could not read character name");
+
+    struct Character *player = Character_create(name, level, stats, numStats);
+    check(player != NULL, "Could not create player character");
+
+    Character_save(db, player);
+
+    return player;
+
+error:
+    return NULL;
 }
 
 int main()
@@ -201,54 +186,23 @@ int main()
     setup();
     check(game_db != NULL, "Database not initialized");
 
-    char *input = NULL;
-    size_t input_len = 0;
-    ssize_t read = 0;
+    struct Character *player = create_player_menu(game_db);
 
-    read = getline(&input, &input_len, stdin);
-    check(read != -1, "Could not read input");
-    if (strncmp(input, "quit", 4) == 0) {
-        cleanup();
-        return 0;
-    } else if (strncmp(input, "start", 5) != 0) {
-        printf("Invalid command. Type 'start' to begin or 'quit' to exit.\n");
-        cleanup();
-        return 1;
-    }
+    struct BaseGame *game = BaseGame_create(player);
+    check(game != NULL, "Could not create game");
 
-    // Main game loop
-    int game_running = 1;
+    struct LocationRecord *locationRecord = Database_getLocationByName(game_db, "Your Apartment");
+    check(locationRecord != NULL, "Could not load starting location");
+    struct Location *start = Location_load(game_db, locationRecord->id);
+    check(start != NULL, "Could not load starting location");
 
-    while (game_running) {
-        refresh();
-        // Save cursor position for next frame
-        int row, col;
-        get_cursor_position(&row, &col);
+    BaseGame_setLocation(game, start);
 
-        // Print current state
-        printf("You are standing in a room. There is a door to the north.\n\n");
-        printf("> ");
-        print_status_bar(player, start);
-
-        // Get user input
-        read = getline(&input, &input_len, stdin);
-
-        // Check for exit condition
-        if (read == -1) {
-            game_running = 0;
-            break;
-        }
-
-        // Parse user input
-        // Execute user input
-        // Update game state
-    }
+    BaseGame_run(game_db, game);
 
     // Cleanup
     cleanup();
 
-    // Note: Game database should be prepopulated with all assets for the game.
-    // Tools for this are not yet implemented, but every table has working write methods.
     return 0;
 
 error:

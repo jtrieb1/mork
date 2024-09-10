@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "../utils/error.h"
 
 struct Item {
+    unsigned short id;
     char name[MAX_NAME], description[MAX_DESCRIPTION];
 };
 

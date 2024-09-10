@@ -26,6 +26,7 @@ void Database_init(struct Database *db)
     // Initialize all tables
     db->tables[CHARACTERS] = CharacterTable_create();
     db->tables[DIALOG] = DialogTable_create();
+    db->tables[GAMES] = GameTable_create();
     db->tables[ITEMS] = ItemTable_create();
     db->tables[DESCRIPTION] = DescriptionTable_create();
     db->tables[INVENTORY] = InventoryTable_create();
@@ -49,6 +50,9 @@ long table_offset(enum Table table)
                 break;
             case DIALOG:
                 offset += sizeof(struct DialogTable);
+                break;
+            case GAMES:
+                offset += sizeof(struct GameTable);
                 break;
             case INVENTORY:
                 offset += sizeof(struct InventoryTable);
@@ -81,6 +85,8 @@ size_t table_size(enum Table table)
             return sizeof(struct DescriptionTable);
         case DIALOG:
             return sizeof(struct DialogTable);
+        case GAMES:
+            return sizeof(struct GameTable);
         case INVENTORY:
             return sizeof(struct InventoryTable);
         case ITEMS:
@@ -209,6 +215,10 @@ enum MorkResult Database_destroy(struct Database *db)
                 if (db->tables[tbl] == NULL) break;
                 res = DialogTable_destroy((struct DialogTable *)db->tables[tbl]);
                 break;
+            case GAMES:
+                if (db->tables[tbl] == NULL) break;
+                res = GameTable_destroy((struct GameTable *)db->tables[tbl]);
+                break;
             case INVENTORY:
                 if (db->tables[tbl] == NULL) break;
                 res = InventoryTable_destroy((struct InventoryTable *)db->tables[tbl]);
@@ -279,6 +289,8 @@ enum MorkResult Database_delete(struct Database *db, enum Table table)
             return DescriptionTable_destroy((struct DescriptionTable *)db->tables[DESCRIPTION]);
         case DIALOG:
             return DialogTable_destroy((struct DialogTable *)db->tables[DIALOG]);
+        case GAMES:
+            return GameTable_destroy((struct GameTable *)db->tables[GAMES]);
         case INVENTORY:
             return InventoryTable_destroy((struct InventoryTable *)db->tables[INVENTORY]);
         case ITEMS:
@@ -305,6 +317,8 @@ enum MorkResult Database_print(struct Database *db, enum Table table)
             return DescriptionTable_print((struct DescriptionTable *)db->tables[DESCRIPTION]);
         case DIALOG:
             return DialogTable_print((struct DialogTable *)db->tables[DIALOG]);
+        case GAMES:
+            return GameTable_print((struct GameTable *)db->tables[GAMES]);
         case INVENTORY:
             return InventoryTable_print((struct InventoryTable *)db->tables[INVENTORY]);
         case ITEMS:
@@ -334,7 +348,7 @@ struct CharacterRecord *Database_getCharacter(struct Database *db, int id)
     check(db != NULL, "Database is NULL");
 
     struct CharacterTable *table = db->tables[CHARACTERS];
-    check(table != NULL, "Character stats table is NULL");
+    check(table != NULL, "Character table is NULL");
 
     return CharacterTable_get(table, id);
 
@@ -347,7 +361,7 @@ struct CharacterRecord *Database_getCharacterByName(struct Database *db, char *n
     check(db != NULL, "Database is NULL");
 
     struct CharacterTable *table = db->tables[CHARACTERS];
-    check(table != NULL, "Character stats table is NULL");
+    check(table != NULL, "Character table is NULL");
 
     return CharacterTable_getByName(table, name);
 
@@ -524,9 +538,9 @@ struct DescriptionRecord *Database_getOrCreateDescription(struct Database *db, c
     struct DescriptionRecord *desc = DescriptionTable_get_by_prefix(table, prefix);
     if (desc == NULL) {
         desc = DescriptionRecord_create(Database_getNextIndex(db, DESCRIPTION), prefix, 0);
-        int idx = Database_createDescription(db, desc);
-        free(desc);
-        desc = DescriptionTable_get(table, idx);
+        enum MorkResult res = Database_createDescription(db, desc);
+        check(res == MORK_OK, "Failed to create description record.");
+        desc = Database_getDescriptionByPrefix(db, prefix);
     }
 
     return desc;
@@ -543,7 +557,6 @@ enum MorkResult Database_createDescription(struct Database *db, struct Descripti
     struct DescriptionTable *table = db->tables[DESCRIPTION];
     if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
 
-    desc->id = Database_getNextIndex(db, DESCRIPTION);
     return DescriptionTable_insert(table, desc);
 }
 
@@ -704,7 +717,6 @@ enum MorkResult Database_createLocation(struct Database *db, struct LocationReco
     struct LocationTable *table = db->tables[LOCATIONS];
     if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
 
-    location->id = Database_getNextIndex(db, LOCATIONS);
     return LocationTable_add(table, location);
 }
 

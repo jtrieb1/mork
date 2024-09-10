@@ -44,6 +44,7 @@ struct Character *Character_create(
     strncpy(character->name, name, MAX_NAME_LEN);
     check_mem(character->name);
     character->name[MAX_NAME_LEN - 1] = '\0';
+    character->id = 0;
 
     character->level = level;
     character->experience = 0;
@@ -105,10 +106,17 @@ void Character_destroy(struct Character *character)
 
 int Character_save(struct Database *db, struct Character *character)
 {
-    int character_id = -1;
-    struct CharacterRecord *existing = Database_getCharacterByName(db, character->name);
-    if (existing == NULL) {
-        // Create
+    if (character == NULL) {
+        log_err("Character is NULL");
+        return -1;
+    }
+    if (strcmp(character->name, "") == 0) {
+        log_err("Character name is empty");
+        return -1;
+    }
+    if (character->id == 0) {
+        // Character has never been saved before
+        // Create a new record for them
         struct CharacterRecord *record = CharacterRecord_create(
             character->name,
             character->level,
@@ -121,13 +129,15 @@ int Character_save(struct Database *db, struct Character *character)
         );
         record->id = Database_getNextIndex(db, CHARACTERS);
         enum MorkResult res = Database_createCharacter(db, record);
-        character_id = record->id;
-        free(record);
         if (res != MORK_OK) {
             log_err("Failed to save character record");
             return -1;
         }
+        character->id = record->id;
     } else {
+        // Character has been saved before
+        // Get them from the database
+        struct CharacterRecord *existing = Database_getCharacter(db, character->id);
         // Update
         existing->level = character->level;
         existing->experience = character->experience;
@@ -144,12 +154,11 @@ int Character_save(struct Database *db, struct Character *character)
             log_err("Failed to update character record");
             return -1;
         }
-        character_id = existing->id;
     }
 
     // Save inventory
-    check(Inventory_save(db, character_id, character->inventory) != -1, "Failed to save inventory");\
-    return character_id;
+    check(Inventory_save(db, character->id, character->inventory) != -1, "Failed to save inventory");\
+    return character->id;
 
 error:
 

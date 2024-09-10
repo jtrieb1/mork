@@ -153,6 +153,9 @@ enum MorkResult InventoryTable_add(struct InventoryTable *table, unsigned short 
         if (table->rows[i].id == 0) {
             table->rows[i].id = junction_id;
             table->rows[i].owner_id = owner_id;
+            for (int j = 0; j < MAX_INVENTORY_ITEMS; j++) {
+                table->rows[i].item_ids[j] = 0;
+            }
             return MORK_OK;
         }
     }
@@ -166,11 +169,20 @@ enum MorkResult InventoryTable_update(struct InventoryTable *table, struct Inven
 
     for (int i = 0; i < MAX_ROWS_INVENTORIES; i++) {
         if (table->rows[i].id == record->id) {
-            memcpy(&table->rows[i], record, sizeof(struct InventoryRecord));
+            table->rows[i].owner_id = record->owner_id;
+            for (int j = 0; j < MAX_INVENTORY_ITEMS; j++) {
+                if (record->item_ids[j] != 0) {
+                    table->rows[i].item_ids[j] = record->item_ids[j];
+                }
+            }
             return MORK_OK;
         }
     }
-    return InventoryTable_add(table, record->owner_id, record->id);
+    enum MorkResult res = InventoryTable_add(table, record->owner_id, record->id);
+    if (res == MORK_OK) {
+        return InventoryTable_update(table, record);
+    }
+    return res;
 }
 
 enum MorkResult InventoryTable_remove(struct InventoryTable *table, unsigned short id)

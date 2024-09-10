@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "inventory.h"
 
 struct Character {
+    unsigned short id;
     char name[MAX_NAME_LEN];
     unsigned char level;
     unsigned long experience;

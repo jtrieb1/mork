@@ -21,11 +21,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define MAX_ITEMS 10
 #define MAX_CHARACTERS 10
 #define MAX_LOCATIONS 100
+#define MAX_NAME 124
 
 struct LocationRecord {
     unsigned char id;
     unsigned char set;
-    char *name;
+    char name[MAX_NAME];
     unsigned short descriptionID;
     unsigned short exitIDs[MAX_EXITS];
     unsigned short itemIDs[MAX_ITEMS];

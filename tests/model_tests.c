@@ -126,9 +126,10 @@ char *test_create_item()
 char *test_add_item_to_inventory()
 {
     struct Character *mork = Character_load(db, "Mork");
-    struct Item *item = Item_create("Mork's Suspenders", "The rainbow suspenders commonly worn by Mork.");
-    Inventory_addItem(mork->inventory, item);
-    mu_assert(Inventory_getItemCount(mork->inventory) == 1, "Failed to add item to inventory.");
+    struct Item *item = Item_load(db, 1); // Load Mork's suspenders
+    Item_save(db, item);
+    mu_assert(Inventory_addItem(mork->inventory, item) == MORK_OK, "Failed to add item to inventory.");
+    mu_assert(Inventory_getItemCount(mork->inventory) == 1, "Failed to update item count.");
 
     // Write everything to the DB by writing the character
     Character_save(db, mork);

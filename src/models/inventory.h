@@ -23,6 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "../coredb/db.h"
 
 struct Inventory {
+    unsigned short id;
     struct Item *items[MAX_INVENTORY_ITEMS];
 };
 
@@ -41,5 +42,5 @@ struct Item *Inventory_getItem(struct Inventory *inventory, int index);
 struct Item *Inventory_getItemByName(struct Inventory *inventory, const char *name);
 enum MorkResult Inventory_print(struct Inventory *inventory);
 
-int Inventory_save(struct Database *db, int owner_id, struct Inventory *inventory);
+int Inventory_save(struct Database *db, unsigned short owner_id, struct Inventory *inventory);
 struct Inventory *Inventory_load(struct Database *db, int owner_id);

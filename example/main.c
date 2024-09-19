@@ -191,7 +191,7 @@ int main()
     struct BaseGame *game = BaseGame_create(player);
     check(game != NULL, "Could not create game");
 
-    struct Location *start = Location_loadFromName(game_db, "Your Apartment");
+    struct Location *start = Location_loadByName(game_db, "Your Apartment");
     check(start != NULL, "Could not load starting location");
 
     BaseGame_setLocation(game, start);

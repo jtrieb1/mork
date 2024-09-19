@@ -156,6 +156,8 @@ struct Item* Item_load(struct Database* db, int id)
     check(description != NULL, "Failed to load description.");
 
     struct Item *item = Item_create(record->name, description->description);
+    item->id = record->id;
+
     return item;
 
 error:
@@ -171,6 +173,7 @@ struct Item *Item_loadByName(struct Database *db, char *name)
     check(description != NULL, "Failed to load description.");
 
     struct Item *item = Item_create(record->name, description->description);
+    item->id = record->id;
     return item;
 
 error:

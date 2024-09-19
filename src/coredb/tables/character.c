@@ -148,6 +148,7 @@ enum MorkResult CharacterTable_init(struct CharacterTable *table) {
  */
 enum MorkResult CharacterTable_newRow(struct CharacterTable *table, struct CharacterRecord *record)
 {
+    record->set = 1;
     unsigned short idx = findNextRowToFill(table->rows, MAX_ROWS_CS);
     memcpy(&table->rows[idx], record, sizeof(struct CharacterRecord));
     return MORK_OK;

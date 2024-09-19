@@ -29,6 +29,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "tables/location.h"
 #include <stdio.h>
 
+// In Mork, we have Models and Records that back them.
+// A model is a struct that represents a game object, like an Inventory or an Item.
+// A record is a struct that represents a row in a table in the database.
+// A model may refer to multiple records, and a record may be referred to by multiple models.
+
 #define MAX_TABLES 7
 
 enum Table {

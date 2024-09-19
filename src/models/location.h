@@ -37,3 +37,4 @@ enum MorkResult Location_addCharacter(struct Location *location, struct Characte
 
 enum MorkResult Location_save(struct Database *db, struct Location *location);
 struct Location *Location_load(struct Database *db, int id);
+struct Location *Location_loadByName(struct Database *db, char *name);

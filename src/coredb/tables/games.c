@@ -118,6 +118,7 @@ enum MorkResult GameTable_insert(struct GameTable *table, struct GameRecord *rec
         return MORK_ERROR_DB_RECORD_NULL;
     }
 
+    record->set = 1;
     unsigned short idx = findNextRowToFill(table->rows, MAX_ROWS_GAMES);
 
     memcpy(&table->rows[idx], record, sizeof(struct GameRecord));

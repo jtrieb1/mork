@@ -83,6 +83,7 @@ enum MorkResult ItemTable_newRow(struct ItemTable *it, struct ItemRecord *record
     if (it == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
     if (record == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
 
+    record->set = 1;
     unsigned short idx = findNextRowToFill(it->rows, MAX_ROWS_ITEMS);
     memcpy(&it->rows[idx], record, sizeof(struct ItemRecord));
     it->rows[idx].set = 1;

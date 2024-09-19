@@ -5,8 +5,9 @@ unsigned short findNextRowToFill(void *rows, int search_depth)
     struct GenericRow *grows = (struct GenericRow *)rows;
     unsigned short idx = 0;
     for (int i = 1; i < search_depth; i++) {
-        if (grows[i].id == 0) {
+        if (grows[i].set == 0) {
             idx = i;
+            grows[i].set = 1;
             break;
         }
     }

@@ -122,6 +122,7 @@ enum MorkResult DescriptionTable_insert(struct DescriptionTable *table, struct D
     if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
     if (record == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
 
+    record->set = 1;
     unsigned short idx = findNextRowToFill(table->rows, MAX_ROWS_DESC);
 
     memcpy(&table->rows[idx], record, sizeof(struct DescriptionRecord));

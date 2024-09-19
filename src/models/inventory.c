@@ -182,6 +182,8 @@ struct InventoryRecord *Inventory_asInventoryRecord(struct Database *db, struct 
     for (int i = 0; i < MAX_INVENTORY_ITEMS; i++) {
         if (inventory->items[i] != NULL) {
             record->item_ids[i] = inventory->items[i]->id;
+        } else {
+            record->item_ids[i] = 0;
         }
     }
 

@@ -37,5 +37,8 @@ enum MorkResult {
     MORK_ERROR_MODEL_LOCATION_FULL, // Location is full
 
     MORK_ERROR_MODEL_GAME_INPUT, // Error with game input
-    MORK_ERROR_MODEL_GAME_PARSE // Error parsing game input
+    MORK_ERROR_MODEL_GAME_PARSE, // Error parsing game input
+
+    MORK_ERROR_MODEL_TRANSACTION_NULL, // Transaction is NULL
+    MORK_ERROR_MODEL_ACTION_KIND, // Invalid action kind
 };

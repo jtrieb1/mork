@@ -161,3 +161,12 @@ enum MorkResult Location_addCharacter(struct Location *location, struct Characte
     }
     return MORK_ERROR_MODEL_LOCATION_FULL;
 }
+
+struct Location *Location_loadByName(struct Database *db, char *name)
+{
+    struct LocationRecord *record = Database_getLocationByName(db, name);
+    if (record == NULL) {
+        return NULL;
+    }
+    return Location_load(db, record->id);
+}

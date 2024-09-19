@@ -129,6 +129,7 @@ enum MorkResult DialogTable_newRow(struct DialogTable *table, struct DialogRecor
     if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
     if (rec == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
 
+    rec->set = 1;
     unsigned short idx = findNextRowToFill(table->rows, MAX_ROWS_DIALOG);
     memcpy(&table->rows[idx], rec, sizeof(struct DialogRecord));
     return MORK_OK;

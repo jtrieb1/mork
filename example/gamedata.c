@@ -62,8 +62,7 @@ void generate_locations(struct Database *db)
     struct Location *spaceship = Location_create("The Spaceship", "A spaceship with a lot of buttons");
     struct Location *ork = Location_create("Ork", "The planet Ork, home of Mork");
 
-    Location_addExit(start, NORTH, mnms->id);
-
+    // Save to generate IDs
     Location_save(db, start);
     Location_save(db, mnms);
     Location_save(db, diner);
@@ -72,6 +71,13 @@ void generate_locations(struct Database *db)
     Location_save(db, spaceship);
     Location_save(db, ork);
 
+    // Add exits
+    Location_addExit(start, NORTH, mnms->id);
+    Location_addExit(mnms, SOUTH, start->id);
+    Location_save(db, start);
+    Location_save(db, mnms);
+
+    // Destroy until needed
     Location_destroy(start);
     Location_destroy(mnms);
     Location_destroy(diner);

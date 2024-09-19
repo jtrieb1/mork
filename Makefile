@@ -47,7 +47,7 @@ tests: $(TESTS)
 # The Cleaner
 clean:
 	rm -rf bin build $(OBJECTS) $(TESTS)
-	rm -f tests/tests.log
+	rm -f tests/tests.log tests/*.db
 	find . -name "*.gc*" -exec rm {} \;
 	rm -rf `find . -name "*.dSYM" -print`
 

@@ -171,9 +171,7 @@ enum MorkResult InventoryTable_update(struct InventoryTable *table, struct Inven
         if (table->rows[i].id == record->id) {
             table->rows[i].owner_id = record->owner_id;
             for (int j = 0; j < MAX_INVENTORY_ITEMS; j++) {
-                if (record->item_ids[j] != 0) {
-                    table->rows[i].item_ids[j] = record->item_ids[j];
-                }
+                table->rows[i].item_ids[j] = record->item_ids[j];
             }
             return MORK_OK;
         }

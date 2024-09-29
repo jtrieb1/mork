@@ -120,32 +120,21 @@ char *test_create_item()
 
     // Make sure we destroy the clone
     // There can, of course, only be one pair of Mork's suspenders.
-    Item_destroy(item2);
-    Item_destroy(item);
+    enum MorkResult res = Item_destroy(item2);
+    mu_assert(res == MORK_OK, "Failed to destroy item.");
+    res = Item_destroy(item);
+    mu_assert(res == MORK_OK, "Failed to destroy item.");
 
     return NULL;
 }
 
 char *test_create_multiple_items()
 {
-    struct Item *item = Item_create("Mork's Suspenders", "The rainbow suspenders commonly worn by Mork.");
-    mu_assert(item != NULL, "Failed to create item.");
-    mu_assert(strcmp(item->name, "Mork's Suspenders") == 0, "Failed to set name.");
-    mu_assert(strcmp(item->description, "The rainbow suspenders commonly worn by Mork.") == 0, "Failed to set description.");
-
-    // Try saving the item
-    int id = Item_save(db, item); // The ID returned is the ID of the item in the database
-    Item_destroy(item);           // Destroy the item. We'll load it from the database in a moment.
-    item = NULL;
-    mu_assert(id != -1, "Failed to save item.");
-
-    // Now try loading the item
-    item = Item_load(db, id);
+    // Load Mork's suspenders
+    struct Item *item = Item_loadByName(db, "Mork's Suspenders");
     mu_assert(item != NULL, "Failed to load item.");
-    mu_assert(strcmp(item->name, "Mork's Suspenders") == 0, "Failed to load name.");
-    mu_assert(strcmp(item->description, "The rainbow suspenders commonly worn by Mork.") == 0, "Failed to load description.");
 
-    // Now create a new item
+    // Create a new item
     struct Item *item2 = Item_create("Mork's Hat", "The red hat commonly worn by Mork.");
     mu_assert(item2 != NULL, "Failed to create item.");
     mu_assert(strcmp(item2->name, "Mork's Hat") == 0, "Failed to set name.");
@@ -208,6 +197,7 @@ char *test_remove_item_from_inventory()
     struct Character *mork = Character_load(db, "Mork");
     mu_assert(mork != NULL, "Failed to load Mork");
     struct Item *item = Item_loadByName(db, "Mork's Suspenders");
+    log_info("Item ID: %d", item->id);
     mu_assert(item != NULL, "Failed to load item.");
 
     mu_assert(Inventory_removeItem(mork->inventory, item) == MORK_OK, "Failed to find item to remove.");
@@ -240,7 +230,8 @@ char *test_create_location()
     // Try saving the location
     enum MorkResult res = Location_save(db, location); 
     mu_assert(res == MORK_OK, "Failed to save location.");
-    Location_destroy(location);           // Destroy the location. We'll load it from the database in a moment.
+    res = Location_destroy(location);           // Destroy the location. We'll load it from the database in a moment.
+    mu_assert(res == MORK_OK, "Failed to destroy location.");
 
     // Now try loading the location
     location = Location_loadByName(db, "Mork's House");
@@ -248,7 +239,8 @@ char *test_create_location()
     mu_assert(strcmp(location->name, "Mork's House") == 0, "Failed to load name.");
     mu_assert(strcmp(location->description, "The home of Mork.") == 0, "Failed to load description.");
 
-    Location_destroy(location);
+    res = Location_destroy(location);
+    mu_assert(res == MORK_OK, "Failed to destroy location.");
 
     return NULL;
 }
@@ -296,8 +288,75 @@ char *test_create_multiple_different_locations()
     return NULL;
 }
 
+char *test_add_item_to_location()
+{
+    struct Location *location = Location_loadByName(db, "Mork's House");
+    mu_assert(location != NULL, "Failed to create location.");
+    Location_save(db, location);
+
+    struct Item *item = Item_loadByName(db, "Mork's Suspenders");
+    mu_assert(item != NULL, "Failed to load item.");
+
+    mu_assert(Location_addItem(location, item) == MORK_OK, "Failed to add item to location.");
+    mu_assert(Location_getItemCount(location) == 1, "Failed to load item count.");
+
+    enum MorkResult res = Location_save(db, location);
+    mu_assert(res == MORK_OK, "Failed to save location.");
+
+    res = Location_destroy(location);
+    mu_assert(res == MORK_OK, "Failed to destroy location.");
+    res = Item_destroy(item);
+    mu_assert(res == MORK_OK, "Failed to destroy item.");
+
+    return NULL;
+}
+
+char *test_remove_item_from_location()
+{
+    struct Location *location = Location_loadByName(db, "Mork's House");
+    mu_assert(location != NULL, "Failed to load location.");
+    mu_assert(Location_getItemCount(location) == 1, "Failed to load location item count.");
+
+    struct Item *item = Item_loadByName(db, "Mork's Suspenders");
+    mu_assert(item != NULL, "Failed to load item.");
+
+    mu_assert(Location_removeItem(location, item) == MORK_OK, "Failed to remove item from location.");
+    mu_assert(Location_getItemCount(location) == 0, "Failed to update location item count.");
+
+    Location_save(db, location);
+
+    Location_destroy(location);
+    Item_destroy(item);
+
+    return NULL;
+}
+
+char *test_update_item_in_location()
+{
+    struct Location *location = Location_loadByName(db, "Mork's House");
+    mu_assert(location != NULL, "Failed to load location.");
+
+    struct Item *item = Item_loadByName(db, "Mork's Suspenders");
+    mu_assert(item != NULL, "Failed to load item.");
+
+    strcpy(item->description, "Updated description for Mork's Suspenders.");
+    mu_assert(Item_save(db, item) != -1, "Failed to update item.");
+
+    struct Item *updated_item = Item_loadByName(db, "Mork's Suspenders");
+    mu_assert(updated_item != NULL, "Failed to load updated item.");
+    log_info("Updated item description: %s", updated_item->description);
+    mu_assert(strcmp(updated_item->description, "Updated description for Mork's Suspenders.") == 0, "Failed to update item description.");
+
+    Location_destroy(location);
+    Item_destroy(item);
+    Item_destroy(updated_item);
+
+    return NULL;
+}
+
 char *test_destroy_db()
 {
+    // Cleanup
     Database_close(db);
     Database_destroy(db);
     return NULL;
@@ -324,6 +383,9 @@ char *all_tests()
     mu_run_test(test_remove_item_from_inventory);
     mu_run_test(test_create_location);
     mu_run_test(test_create_multiple_different_locations);
+    mu_run_test(test_add_item_to_location);
+    mu_run_test(test_remove_item_from_location);
+    mu_run_test(test_update_item_in_location);
     mu_run_test(test_destroy_db);
     mu_run_test(test_destroy_db_file);
 

@@ -31,6 +31,27 @@ unsigned short calculateMaxMana(unsigned char level)
     return 50 + (level * 10);
 }
 
+struct CharacterRecord *Character_asRecord(struct Character *character)
+{
+    if (character == NULL) {
+        return NULL;
+    }
+
+    struct CharacterRecord *record = CharacterRecord_create(
+        character->name,
+        character->level,
+        character->health,
+        character->max_health,
+        character->mana,
+        character->max_mana,
+        character->stats,
+        character->numStats
+    );
+    record->id = character->id;
+
+    return record;
+}
+
 struct Character *Character_create(
     char *name,
     unsigned char level,
@@ -94,74 +115,38 @@ error:
 
 void Character_destroy(struct Character *character)
 {
-    if (character) {
-        if (character->inventory) {
+    if (character != NULL) {
+        if (character->inventory != NULL) {
             Inventory_destroy(character->inventory);
         }
         free(character);
     }
-
-    character = NULL;
 }
 
 int Character_save(struct Database *db, struct Character *character)
 {
-    if (character == NULL) {
-        log_err("Character is NULL");
-        return -1;
-    }
-    if (strcmp(character->name, "") == 0) {
-        log_err("Character name is empty");
-        return -1;
-    }
-    if (character->id == 0) {
-        // Character has never been saved before
-        // Create a new record for them
-        struct CharacterRecord *record = CharacterRecord_create(
-            character->name,
-            character->level,
-            character->health,
-            character->max_health,
-            character->mana,
-            character->max_mana,
-            character->stats,
-            character->numStats
-        );
-        record->id = Database_getNextIndex(db, CHARACTERS);
-        enum MorkResult res = Database_createCharacter(db, record);
-        if (res != MORK_OK) {
-            log_err("Failed to save character record");
-            return -1;
-        }
-        character->id = record->id;
+    struct CharacterRecord *characterRecord = Character_asRecord(character);
+    check(characterRecord != NULL, "Failed to create character record");
+
+    if (characterRecord->id == 0) {
+        characterRecord->id = Database_getNextIndex(db, CHARACTERS);
+        check(characterRecord->id != 0, "Failed to get next index");
+        
+        enum MorkResult res = Database_createCharacter(db, characterRecord);
+        check(res == MORK_OK, "Failed to create character record");
     } else {
-        // Character has been saved before
-        // Get them from the database
-        struct CharacterRecord *existing = Database_getCharacter(db, character->id);
-        // Update
-        existing->level = character->level;
-        existing->experience = character->experience;
-        existing->health_and_mana = character->health;
-        existing->max_health_and_mana = character->max_health;
-        existing->numStats = character->numStats;
-
-        for (int i = 0; i < character->numStats; i++) {
-            existing->stats = SET_STAT(existing->stats, i, character->stats[i]);
-        }
-
-        enum MorkResult res = Database_updateCharacter(db, existing);
-        if (res != MORK_OK) {
-            log_err("Failed to update character record");
-            return -1;
-        }
+        enum MorkResult res = Database_updateCharacter(db, characterRecord);
+        check(res == MORK_OK, "Failed to update character record");
     }
 
-    // Save inventory
-    check(Inventory_save(db, character->id, character->inventory) != -1, "Failed to save inventory");\
-    return character->id;
+    // Make sure to save the character's inventory
+    Inventory_save(db, characterRecord->id, character->inventory);
+
+    unsigned short character_id = characterRecord->id;
+    free(characterRecord);
+    return character_id;
 
 error:
-
     return -1;
 }
 
@@ -172,14 +157,12 @@ struct Character *Character_fromRecord(struct Database *db, struct CharacterReco
         stats[i] = GET_STAT(rec.stats, i);
     }
 
-    struct Character *character = Character_create(
-        rec.name,
-        rec.level,
-        stats,
-        rec.numStats
-    );
-    check(character, "Failed to create character");
+    struct Character *character = calloc(1, sizeof(struct Character));
+    check_mem(character);
+    
+    strncpy(character->name, rec.name, MAX_NAME_LEN);
 
+    character->id = rec.id;
     character->level = rec.level;
     character->experience = rec.experience;
     character->health = GET_HEALTH(rec.health_and_mana);
@@ -190,7 +173,6 @@ struct Character *Character_fromRecord(struct Database *db, struct CharacterReco
     free(stats);
 
     // Destroy the dummy inventory that was created during character creation
-    Inventory_destroy(character->inventory);
     character->inventory = Inventory_load(db, rec.id);
 
     return character;

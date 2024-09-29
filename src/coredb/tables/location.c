@@ -29,18 +29,23 @@ struct LocationRecord *LocationRecord_create(
     unsigned short descriptionID
 )
 {
-    check(id != 0, "Expected a valid ID");
     check(name != NULL && strcmp(name, "") != 0, "Expected a valid name");
 
     struct LocationRecord *record = (struct LocationRecord *)calloc(1, sizeof(struct LocationRecord));
     record->id = id;
+    int name_len = strlen(name);
     strncpy(record->name, name, MAX_NAME - 1);
+    // Fill remainder of name with null bytes
+    for (int i = name_len; i < MAX_NAME; i++)
+    {
+        record->name[i] = '\0';
+    }
     record->descriptionID = descriptionID;
-    record->set = 1;
 
-    memset(record->exitIDs, MAX_EXITS, sizeof(unsigned short));
-    memset(record->itemIDs, MAX_ITEMS, sizeof(unsigned short));
-    memset(record->characterIDs, MAX_CHARACTERS, sizeof(unsigned short));
+    // Zero out the arrays
+    memset(record->exitIDs, 0, MAX_EXITS * sizeof(unsigned short));
+    memset(record->itemIDs, 0, MAX_ITEMS * sizeof(unsigned short));
+    memset(record->characterIDs, 0, MAX_CHARACTERS * sizeof(unsigned short));
     return record;
 
 error:
@@ -229,6 +234,7 @@ enum MorkResult LocationTable_add(struct LocationTable *table, struct LocationRe
     record->set = 1;
     int next_idx = findNextRowToFill(table->locations, MAX_LOCATIONS);
     memcpy(&table->locations[next_idx], record, sizeof(struct LocationRecord));
+    table->locations[next_idx].set = 1;
 
     return MORK_OK;
 }
@@ -243,6 +249,7 @@ enum MorkResult LocationTable_update(struct LocationTable *table, struct Locatio
         if (table->locations[i].set == 1 && table->locations[i].id == record->id)
         {
             memcpy(&table->locations[i], record, sizeof(struct LocationRecord));
+            table->locations[i].set = 1;
             return MORK_OK;
         }
     }
@@ -257,11 +264,13 @@ struct LocationRecord *LocationTable_get(struct LocationTable *table, unsigned s
 
     for (int i = 0; i < MAX_LOCATIONS; i++)
     {
-        if (table->locations[i].id == id)
+        if (table->locations[i].set == 1 && table->locations[i].id == id)
         {
             return &table->locations[i];
         }
     }
+
+    log_err("Location not found (by ID).");
 
 error:
     return NULL;
@@ -274,9 +283,9 @@ enum MorkResult LocationTable_remove(struct LocationTable *table, unsigned short
 
     for (int i = 0; i < MAX_LOCATIONS; i++)
     {
-        if (table->locations[i].id == id)
+        if (table->locations[i].id == id && table->locations[i].set == 1)
         {
-            LocationRecord_destroy(&table->locations[i]);
+            table->locations[i].set = 0;
             return MORK_OK;
         }
     }
@@ -291,11 +300,13 @@ struct LocationRecord *LocationTable_getByName(struct LocationTable *table, char
 
     for (int i = 0; i < MAX_LOCATIONS; i++)
     {
-        if (strcmp(table->locations[i].name, name) == 0)
+        if (table->locations[i].set == 1 && strcmp(table->locations[i].name, name) == 0)
         {
             return &table->locations[i];
         }
     }
+
+    log_err("Location not found (by name).");
 
 error:
     return NULL;

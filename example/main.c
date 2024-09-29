@@ -31,24 +31,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <sys/types.h>
 
 #include "gamedata.h"
-
-char *title = ""
-"_______  _______  _______  _\n"
-"(       )(  ___  )(  ____ )| \\    /\\\n"
-"| () () || (   ) || (    )||  \\  / /\n"
-"| || || || |   | || (____)||  (_/ /\n"
-"| |(_)| || |   | ||     __)|   _ (\n"
-"| |   | || |   | || (\\ (   |  ( \\ \\\n"
-"| )   ( || (___) || ) \\ \\__|  /  \\ \\\n"
-"|/     \\|(_______)|/   \\__/|_/    \\/\n";
-
-const char *intro_text = ""
-"MORK I: The Cool Aboveground Pool\n"
-"Interactive Fiction - A Poorly-Written Parody\n"
-"Written by Jacob Triebwasser, contact at \n"
-"jacob.triebwasser@gmail.com\n"
-"\n"
-"Type 'start' to start or 'quit' to quit.\n";
+#include "text.h"
 
 enum Stats {
     STRENGTH,
@@ -61,8 +44,6 @@ enum Stats {
 
 const char *dir_name = "/tmp/morkdata";
 const char *dbname = "mork.db";
-
-struct Database *game_db = NULL;
 
 void set_title_text_format()
 {
@@ -100,16 +81,12 @@ error:
     exit(1);
 }
 
-void create_db(char *full_path)
+struct Database *create_db(char *full_path)
 {
-    game_db = Database_create();
-    Database_open(game_db, full_path);
-    check(game_db != NULL, "Could not create database");
+    struct Database *game_db = Database_create();
+    Database_createFile(game_db, full_path);
 
-    return;
-
-error:
-    exit(1);
+    return game_db;
 }
 
 void setup()
@@ -119,19 +96,22 @@ void setup()
     sprintf(full_path, "%s/%s", dir_name, dbname);
 
     setup_game_directory(full_path);
-    create_db(full_path);
+
+    struct Database *game_db = create_db(full_path);
+    Database_open(game_db, full_path);
     
     populate_game(game_db);
 
     clear_screen();
 
     set_title_text_format();
-    print_centered(title);
+    print_centered(TITLE);
     printf("\n");
 
     set_normal_text_format();
-    printf("%s\n", intro_text);
+    printf("%s\n", INTRO);
 
+    Database_destroy(game_db);
     free(full_path);
     return;
 
@@ -145,17 +125,9 @@ void refresh()
     clear_screen();
     set_cursor_to_screen_top();
     set_title_text_format();
-    print_centered(title);
+    print_centered(TITLE);
     printf("\n\n");
     set_normal_text_format();
-}
-
-void cleanup()
-{   
-    if (game_db != NULL) {
-        Database_destroy(game_db);
-    }
-    return;
 }
 
 struct Character *create_player_menu(struct Database *db)
@@ -184,7 +156,13 @@ error:
 int main()
 {
     setup();
-    check(game_db != NULL, "Database not initialized");
+
+    struct Database *game_db = Database_create();
+    check(game_db != NULL, "Could not create database");
+    enum MorkResult result = Database_open(game_db, "/tmp/morkdata/mork.db");
+    check(game_db != NULL, "Could not open database");
+    log_info("Result of opening DB: %d", result);
+    check(result == MORK_OK, "Could not open database");
 
     struct Character *player = create_player_menu(game_db);
 
@@ -198,12 +176,8 @@ int main()
 
     BaseGame_run(game_db, game);
 
-    // Cleanup
-    cleanup();
-
     return 0;
 
 error:
-    cleanup();
     return 1;
 }

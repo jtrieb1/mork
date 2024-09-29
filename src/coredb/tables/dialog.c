@@ -129,9 +129,9 @@ enum MorkResult DialogTable_newRow(struct DialogTable *table, struct DialogRecor
     if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
     if (rec == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
 
-    rec->set = 1;
     unsigned short idx = findNextRowToFill(table->rows, MAX_ROWS_DIALOG);
     memcpy(&table->rows[idx], rec, sizeof(struct DialogRecord));
+    table->rows[idx].set = 1;
     return MORK_OK;
 }
 
@@ -149,8 +149,9 @@ enum MorkResult DialogTable_update(struct DialogTable *table, struct DialogRecor
     if (rec == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
 
     for (unsigned short i = 0; i < MAX_ROWS_DIALOG; ++i) {
-        if (table->rows[i].id == rec->id) {
+        if (table->rows[i].set == 1 && table->rows[i].id == rec->id) {
             memcpy(&table->rows[i], rec, sizeof(struct DialogRecord));
+            table->rows[i].set = 1;
             return MORK_OK;
         }
     }
@@ -171,10 +172,12 @@ struct DialogRecord *DialogTable_get(struct DialogTable *table, unsigned short i
     check(id > 0, "Expected valid ID, got 0");
 
     for (int i = 0; i < MAX_ROWS_DIALOG; i++) {
-        if (table->rows[i].id == id) {
+        if (table->rows[i].set == 1 && table->rows[i].id == id) {
             return &table->rows[i];
         }
     }
+
+    log_err("Dialog ID %d not found", id);
 
 error:
     return NULL;
@@ -192,7 +195,7 @@ enum MorkResult DialogTable_delete(struct DialogTable *table, unsigned short id)
     if (id == 0) { return MORK_ERROR_DB_INVALID_ID; }
 
     for (int i = 0; i < MAX_ROWS_DIALOG; i++) {
-        if (table->rows[i].id == id) {
+        if (table->rows[i].set == 1 && table->rows[i].id == id) {
             table->rows[i].set = 0;
             return MORK_OK;
         }

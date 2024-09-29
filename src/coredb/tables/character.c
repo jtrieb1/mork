@@ -151,6 +151,7 @@ enum MorkResult CharacterTable_newRow(struct CharacterTable *table, struct Chara
     record->set = 1;
     unsigned short idx = findNextRowToFill(table->rows, MAX_ROWS_CS);
     memcpy(&table->rows[idx], record, sizeof(struct CharacterRecord));
+    table->rows[idx].set = 1;
     return MORK_OK;
 }
 
@@ -168,8 +169,9 @@ enum MorkResult CharacterTable_update(struct CharacterTable *table, struct Chara
     if (record == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
 
     for (int i = 0; i < MAX_ROWS_CS; i++) {
-        if (table->rows[i].id == record->id) {
+        if (table->rows[i].id == record->id && table->rows[i].set == 1) {
             memcpy(&table->rows[i], record, sizeof(struct CharacterRecord));
+            table->rows[i].set = 1;
             return MORK_OK;
         }
     }
@@ -189,10 +191,12 @@ struct CharacterRecord *CharacterTable_get(struct CharacterTable *table, int id)
     check(id > 0, "Expected a valid id, got %d", id);
 
     for (int i = 0; i < MAX_ROWS_CS; i++) {
-        if (table->rows[i].id == id) {
+        if (table->rows[i].id == id && table->rows[i].set == 1) {
             return &table->rows[i];
         }
     }
+
+    log_err("Character not found (by ID). ID: %d", id);
 
 error:
     return NULL;
@@ -210,10 +214,12 @@ struct CharacterRecord *CharacterTable_getByName(struct CharacterTable *table, c
     check(name != NULL && strcmp(name, "") != 0, "Expected a valid name");
 
     for (int i = 0; i < MAX_ROWS_CS; i++) {
-        if (strcmp(table->rows[i].name, name) == 0) {
+        if (strcmp(table->rows[i].name, name) == 0 && table->rows[i].set == 1) {
             return &table->rows[i];
         }
     }
+
+    log_err("Character not found (by name). Name: %s", name);
 
 error:
     return NULL;
@@ -230,7 +236,7 @@ enum MorkResult CharacterTable_delete(struct CharacterTable *table, int id) {
     if (id <= 0) { return MORK_ERROR_DB_INVALID_ID; }
 
     for (int i = 0; i < MAX_ROWS_CS; i++) {
-        if (table->rows[i].id == id) {
+        if (table->rows[i].id == id && table->rows[i].set == 1) {
             table->rows[i].set = 0;
             return MORK_OK;
         }

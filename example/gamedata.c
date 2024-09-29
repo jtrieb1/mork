@@ -72,8 +72,7 @@ void generate_locations(struct Database *db)
     Location_save(db, ork);
 
     // Add exits
-    Location_addExit(start, NORTH, mnms->id);
-    Location_addExit(mnms, SOUTH, start->id);
+    Location_addExit(start, NORTH, mnms); // Automatically adds backwards path
     Location_save(db, start);
     Location_save(db, mnms);
 

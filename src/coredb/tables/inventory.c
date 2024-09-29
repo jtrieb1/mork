@@ -112,8 +112,7 @@ enum MorkResult InventoryTable_init(struct InventoryTable* table)
     }
 
     for (int i = 0; i < MAX_ROWS_INVENTORIES; i++) {
-        table->rows[i].id = 0;
-        table->rows[i].set = 0;
+        memset(&table->rows[i], 0, sizeof(struct InventoryRecord));
     }
     
     return MORK_OK;
@@ -150,7 +149,8 @@ enum MorkResult InventoryTable_add(struct InventoryTable *table, unsigned short 
     }
 
     for (int i = 0; i < MAX_ROWS_INVENTORIES; i++) {
-        if (table->rows[i].id == 0) {
+        if (table->rows[i].set == 0 && table->rows[i].id == 0) {
+            table->rows[i].set = 1;
             table->rows[i].id = junction_id;
             table->rows[i].owner_id = owner_id;
             for (int j = 0; j < MAX_INVENTORY_ITEMS; j++) {
@@ -168,7 +168,7 @@ enum MorkResult InventoryTable_update(struct InventoryTable *table, struct Inven
     if (record == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
 
     for (int i = 0; i < MAX_ROWS_INVENTORIES; i++) {
-        if (table->rows[i].id == record->id) {
+        if (table->rows[i].set == 1 && table->rows[i].id == record->id) {
             table->rows[i].owner_id = record->owner_id;
             for (int j = 0; j < MAX_INVENTORY_ITEMS; j++) {
                 table->rows[i].item_ids[j] = record->item_ids[j];
@@ -176,11 +176,7 @@ enum MorkResult InventoryTable_update(struct InventoryTable *table, struct Inven
             return MORK_OK;
         }
     }
-    enum MorkResult res = InventoryTable_add(table, record->owner_id, record->id);
-    if (res == MORK_OK) {
-        return InventoryTable_update(table, record);
-    }
-    return res;
+    return MORK_ERROR_DB_NOT_FOUND;
 }
 
 enum MorkResult InventoryTable_remove(struct InventoryTable *table, unsigned short id)
@@ -189,7 +185,8 @@ enum MorkResult InventoryTable_remove(struct InventoryTable *table, unsigned sho
     if (id == 0) { return MORK_ERROR_DB_INVALID_ID; }
 
     for (int i = 0; i < MAX_ROWS_INVENTORIES; i++) {
-        if (table->rows[i].id == id) {
+        if (table->rows[i].set == 1 && table->rows[i].id == id) {
+            table->rows[i].set = 0;
             table->rows[i].id = 0;
             table->rows[i].owner_id = 0;
             for (int j = 0; j < MAX_INVENTORY_ITEMS; j++) {
@@ -207,7 +204,7 @@ struct InventoryRecord* InventoryTable_get(struct InventoryTable *table, unsigne
     check(id != 0, "Expected a valid ID");
 
     for (int i = 0; i < MAX_ROWS_INVENTORIES; i++) {
-        if (table->rows[i].id == id) {
+        if (table->rows[i].set == 1 && table->rows[i].id == id) {
             return &table->rows[i];
         }
     }
@@ -222,7 +219,7 @@ struct InventoryRecord* InventoryTable_getByOwner(struct InventoryTable* table, 
     check(owner_id > 0, "Expected valid Owner ID");
 
     for (int i = 0; i < MAX_ROWS_INVENTORIES; i++) {
-        if (table->rows[i].owner_id == owner_id) {
+        if (table->rows[i].set == 1 && table->rows[i].owner_id == owner_id) {
             return &table->rows[i];
         }
     }

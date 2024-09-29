@@ -32,8 +32,14 @@ struct ItemRecord *ItemRecord_create(unsigned short id, char *name, unsigned sho
 
     record->id = id;
     record->set = 0;
+
+    int name_len = strlen(name);
     strncpy(record->name, name, MAX_NAME);
-    record->name[MAX_NAME - 1] = '\0';
+    // Fill remainder of name with null bytes
+    for (int i = name_len; i < MAX_NAME; i++) {
+        record->name[i] = '\0';
+    }
+
     record->description_id = description_id;
 
     return record;
@@ -51,20 +57,21 @@ enum MorkResult ItemRecord_destroy(struct ItemRecord *record)
 
 enum MorkResult ItemTable_init(struct ItemTable *table) {
     if (table == NULL) { return MORK_ERROR_DB_TABLE_NULL; }
-
+    
     for (int i = 0; i < MAX_ROWS_ITEMS; i++) {
-        table->rows[i].id = 0;
-        table->rows[i].set = 0;
+        memset(&table->rows[i], 0, sizeof(struct ItemRecord));
     }
+
     return MORK_OK;
 }
 
 struct ItemTable *ItemTable_create()
 {
     struct ItemTable *table = calloc(1, sizeof(struct ItemTable));
+    memset(table, 0, sizeof(struct ItemTable));
     check_mem(table);
-
     ItemTable_init(table);
+
     return table;
 
 error:
@@ -119,6 +126,8 @@ struct ItemRecord *ItemTable_get(struct ItemTable *table, unsigned short id)
         }
     }
 
+    log_err("Item not found (by ID).");
+
 error:
     return NULL;
 }
@@ -133,6 +142,8 @@ struct ItemRecord *ItemTable_getByName(struct ItemTable *table, char *name)
             return &table->rows[i];
         }
     }
+
+    log_err("Item not found (by name).");
 
 error:
     return NULL;

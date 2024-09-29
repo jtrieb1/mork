@@ -54,6 +54,7 @@ struct Database {
 };
 
 struct Database *Database_create();
+enum MorkResult Database_createFile(struct Database *db, const char *path);
 enum MorkResult Database_open(struct Database *db, const char *path);
 enum MorkResult Database_close(struct Database *db);
 enum MorkResult Database_flush(struct Database *db);

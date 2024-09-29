@@ -42,6 +42,8 @@ error:
 
 struct Inventory *Inventory_clone(struct Inventory *source)
 {
+    check(source != NULL, "Expected a non-null source inventory.");
+    
     struct Inventory *inventory = Inventory_create();
     check_mem(inventory);
 
@@ -61,6 +63,9 @@ error:
 
 enum MorkResult Inventory_destroy(struct Inventory *inventory)
 {
+    if (inventory == NULL) {
+        return MORK_OK;
+    }
     for (int i = 0; i < MAX_INVENTORY_ITEMS; i++) {
         if (inventory->items[i] != NULL) {
             return Item_destroy(inventory->items[i]);
@@ -174,20 +179,24 @@ enum MorkResult Inventory_print(struct Inventory *inventory)
 struct InventoryRecord *Inventory_asInventoryRecord(struct Database *db, struct Inventory *inventory, unsigned short owner_id)
 {
     struct CharacterRecord *owner = Database_getCharacter(db, owner_id);
-    struct InventoryRecord *record = Database_getInventoryByOwner(db, owner->name);
-    if (record == NULL) {
-        record = InventoryRecord_create(Database_getNextIndex(db, INVENTORY), owner_id);
-    }
+    check(owner != NULL, "Failed to load character record.");
+
+    struct InventoryRecord *record = calloc(1, sizeof(struct InventoryRecord));
+    check_mem(record);
+
+    record->id = inventory->id;
+    record->owner_id = owner_id;
 
     for (int i = 0; i < MAX_INVENTORY_ITEMS; i++) {
         if (inventory->items[i] != NULL) {
-            record->item_ids[i] = inventory->items[i]->id;
-        } else {
-            record->item_ids[i] = 0;
+            record->item_ids[i] = Item_save(db, inventory->items[i]);
         }
     }
 
     return record;
+
+error:
+    return NULL;
 }
 
 int Inventory_save(struct Database *db, unsigned short owner, struct Inventory *inventory)
@@ -206,7 +215,9 @@ int Inventory_save(struct Database *db, unsigned short owner, struct Inventory *
         check(res == MORK_OK, "Failed to update inventory record.");
     }
 
-    return record->id;
+    unsigned short inventory_id = record->id;
+    free(record);
+    return inventory_id;
 
 error:
     return -1;

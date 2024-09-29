@@ -23,13 +23,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 void Database_init(struct Database *db)
 {
+    if (db->initialized == 1) {
+        return; // Don't re-initialize
+    }
     // Initialize all tables
     db->tables[CHARACTERS] = CharacterTable_create();
+    CharacterTable_init(db->tables[CHARACTERS]);
     db->tables[DIALOG] = DialogTable_create();
+    DialogTable_init(db->tables[DIALOG]);
     db->tables[GAMES] = GameTable_create();
+    GameTable_init(db->tables[GAMES]);
     db->tables[ITEMS] = ItemTable_create();
+    ItemTable_init(db->tables[ITEMS]);
     db->tables[DESCRIPTION] = DescriptionTable_create();
+    DescriptionTable_init(db->tables[DESCRIPTION]);
     db->tables[INVENTORY] = InventoryTable_create();
+    InventoryTable_init(db->tables[INVENTORY]);
     db->tables[LOCATIONS] = LocationTable_create();
     db->initialized = 1;
 
@@ -39,33 +48,31 @@ long table_offset(enum Table table)
 {
     assert(table >= 0 && table < MAX_TABLES);
 
+    #if defined(__GNUC__) || defined(__clang__)
+        #pragma GCC diagnostic push
+        #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+    #elif defined(_MSC_VER)
+        #pragma warning(push)
+        #pragma warning(disable: 4065)
+    #endif
     long offset = 0;
-    for (enum Table tbl = 0; tbl < table; tbl++) {
-        switch (tbl) {
-            case CHARACTERS:
-                offset += sizeof(struct CharacterTable);
-                break;
-            case DESCRIPTION:
-                offset += sizeof(struct DescriptionTable);
-                break;
-            case DIALOG:
-                offset += sizeof(struct DialogTable);
-                break;
-            case GAMES:
-                offset += sizeof(struct GameTable);
-                break;
-            case INVENTORY:
-                offset += sizeof(struct InventoryTable);
-                break;
-            case ITEMS:
-                offset += sizeof(struct ItemTable);
-                break;
-            case LOCATIONS:
-                offset += sizeof(struct LocationTable);
-                break;
-            default:
-                sentinel("Unknown table type");
-        }
+    switch (table) {
+        case LOCATIONS:
+            offset += sizeof(struct ItemTable);
+        case ITEMS:
+            offset += sizeof(struct InventoryTable);
+        case INVENTORY:
+            offset += sizeof(struct GameTable);
+        case GAMES:
+            offset += sizeof(struct DialogTable);
+        case DIALOG:
+            offset += sizeof(struct DescriptionTable);
+        case DESCRIPTION:
+            offset += sizeof(struct CharacterTable);
+        case CHARACTERS:
+            break;
+        default:
+            sentinel("Unknown table type");
     }
 
     return offset;
@@ -101,12 +108,40 @@ error:
     return 0;
 }
 
+enum MorkResult Database_createFile(struct Database *db, const char *path)
+{
+    if (db == NULL) { return MORK_ERROR_DB_NULL; }
+    if (path == NULL) { return MORK_ERROR_DB_INVALID_PATH; }
+
+    if (db->file) {
+        fclose(db->file);
+    }
+
+    db->file = fopen(path, "w+");
+    check(db->file, "Failed to create file: %s", path);
+
+    Database_init(db);
+
+    // Write out the tables to disk
+    for (enum Table tbl = 0; tbl < MAX_TABLES; tbl++) {
+        Database_write(db, tbl);
+    }
+
+    // Close file to flush to disk
+    fclose(db->file);
+
+    return MORK_OK;
+
+error:
+    return MORK_ERROR_DB;
+}
+
 enum MorkResult Database_open(struct Database *db, const char *path)
 {
     if (db == NULL) { return MORK_ERROR_DB_NULL; }
     if (path == NULL) { return MORK_ERROR_DB_INVALID_PATH; }
 
-    db->file = fopen(path, "r+");
+    db->file = fopen(path, "rw+");
     check(db->file, "Failed to open file: %s", path);
 
     Database_init(db);
@@ -184,6 +219,8 @@ struct Database *Database_create()
     for (int i = 0; i < MAX_TABLES; i++) {
         db->tables[i] = NULL;
     }
+
+    Database_init(db);
 
     return db;
 
@@ -274,6 +311,12 @@ enum MorkResult Database_write(struct Database *db, enum Table table)
 
     size_t writeres = fwrite(db->tables[table], table_size(table), 1, db->file);
     if (writeres != table_size(table)) { return MORK_ERROR_DB_FILE_WRITE; }
+
+    int flushres = fflush(db->file);
+    if (flushres != 0) { return MORK_ERROR_DB_FILE_FLUSH; }
+
+    // Return seek back to the beginning of the file
+    fseek(db->file, 0, SEEK_SET);
     return MORK_OK;
 }
 
@@ -661,6 +704,7 @@ struct ItemRecord **Database_getItemsInInventory(struct Database *db, char *owne
 
     for (int i = 0; i < InventoryRecord_getItemCount(inventory); i++)
     {
+        if (inventory->item_ids[i] == 0) { continue; }
         items[i] = Database_getItem(db, inventory->item_ids[i]);
     }
 

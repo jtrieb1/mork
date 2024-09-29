@@ -20,6 +20,7 @@ enum MorkResult {
     MORK_ERROR_DB_FILE_SEEK, // Error seeking in file
     MORK_ERROR_DB_FILE_READ, // Error reading from file
     MORK_ERROR_DB_FILE_WRITE, // Error writing to file
+    MORK_ERROR_DB_FILE_FLUSH, // Error flushing file
 
     MORK_ERROR_DB_FAILED_CREATE, // Failed to create
     MORK_ERROR_DB_FAILED_SAVE, // Failed to save
@@ -28,7 +29,9 @@ enum MorkResult {
 
     // Model Errors
     MORK_ERROR_MODEL, // Generic model error
+    MORK_ERROR_MODEL_CHARACTER_NOT_FOUND, // Character not found
     MORK_ERROR_MODEL_ITEM_NULL, // Item is NULL
+    MORK_ERROR_MODEL_ITEM_NOT_FOUND, // Item not found
     MORK_ERROR_MODEL_ACTION_NULL, // Action is NULL
     MORK_ERROR_MODEL_INVENTORY_FULL, // Inventory is full
     MORK_ERROR_MODEL_INVENTORY_ITEM_NOT_FOUND, // Item not found in inventory

@@ -24,6 +24,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 struct Item *Item_create(const char *name, const char *description)
 {
+    check(name != NULL, "Expected a non-null name.");
+    check(description != NULL, "Expected a non-null description.");
+    check(strcmp(name, "") != 0, "Expected a non-empty name.");
+    check(strcmp(description, "") != 0, "Expected a non-empty description.");
+
     struct Item *item = malloc(sizeof(struct Item));
     check_mem(item);
 
@@ -43,7 +48,13 @@ error:
 
 struct Item *Item_clone(struct Item *source)
 {
-    return Item_create(source->name, source->description);
+    check(source != NULL, "Expected a non-null source item.");
+    struct Item *pItem = Item_create(source->name, source->description);
+    pItem->id = source->id;
+    return pItem;
+
+error:
+    return NULL;
 }
 
 enum MorkResult Item_destroy(struct Item *item)
@@ -57,6 +68,9 @@ enum MorkResult Item_destroy(struct Item *item)
 
 struct DescriptionRecord *Item_getDescriptionRecord(struct Database *db, struct Item *item)
 {
+    check(db != NULL, "Database is NULL");
+    check(item != NULL, "Item is NULL");
+
     // See if item description exists in database
     struct DescriptionRecord *descriptionRecord = Database_getDescriptionByPrefix(db, item->description);
 
@@ -73,6 +87,9 @@ struct DescriptionRecord *Item_getDescriptionRecord(struct Database *db, struct 
             free(descriptionRecord);
             return NULL;
         }
+
+        free(descriptionRecord);
+        descriptionRecord = Database_getDescription(db, nextDescriptionID);
     }
 
     return descriptionRecord;
@@ -83,6 +100,9 @@ error:
 
 struct ItemRecord *Item_asItemRecord(struct Database *db, struct Item *item)
 {
+    check(db != NULL, "Database is NULL");
+    check(item != NULL, "Item is NULL");
+
     struct DescriptionRecord *descriptionRecord = Item_getDescriptionRecord(db, item);
     check(descriptionRecord != NULL, "Failed to get description record.");
 
@@ -105,6 +125,8 @@ error:
 
 int Item_save(struct Database *db, struct Item *item)
 {
+    check(db != NULL, "Database is NULL");
+
     if (item == NULL) {
         log_err("Item is NULL");
         return -1;
@@ -122,7 +144,14 @@ int Item_save(struct Database *db, struct Item *item)
         check(record != NULL, "Failed to create item record.");
         record->id = nextItemID;
 
+        // Create associated records
+        struct DescriptionRecord *descriptionRecord = Item_getDescriptionRecord(db, item);
+        check(descriptionRecord != NULL, "Failed to get description record.");
+        record->description_id = descriptionRecord->id;
+
         enum MorkResult res = Database_createItem(db, record);
+        free(record); // Cleanup
+
         if (res != MORK_OK) {
             log_err("Failed to create item record.");
             return -1;
@@ -133,6 +162,23 @@ int Item_save(struct Database *db, struct Item *item)
         // Item exists in DB, update it.
         struct ItemRecord *record = Item_asItemRecord(db, item);
         check(record != NULL, "Failed to create item record.");
+
+        // Ensure we update associated records too
+        struct DescriptionRecord *descriptionRecord = Item_getDescriptionRecord(db, item);
+        check(descriptionRecord != NULL, "Failed to get description record.");
+
+        if (strcmp(descriptionRecord->description, item->description) != 0) {
+            // Description has changed, update it
+            memset(descriptionRecord->description, 0, MAX_DESCRIPTION);
+            strncpy(descriptionRecord->description, item->description, MAX_DESCRIPTION);
+            enum MorkResult descriptionUpdateResult = Database_updateDescription(db, descriptionRecord);
+            if (descriptionUpdateResult != MORK_OK) {
+                log_err("Failed to update description record.");
+                return -1;
+            }
+        }
+
+        record->description_id = descriptionRecord->id;
 
         enum MorkResult res = Database_updateItem(db, record);
         if (res != MORK_OK) {
@@ -149,6 +195,9 @@ error:
 
 struct Item* Item_load(struct Database* db, int id)
 {
+    check(id > 0, "Invalid ID given: %d", id);
+    check(db != NULL, "Database is NULL");
+
     struct ItemRecord *record = Database_getItem(db, id);
     check(record != NULL, "Failed to load item.");
 
@@ -166,15 +215,14 @@ error:
 
 struct Item *Item_loadByName(struct Database *db, char *name)
 {
+    check(name != NULL, "Expected a non-null name.");
+    check(strcmp(name, "") != 0, "Expected a non-empty name.");
+    check(db != NULL, "Expected a non-null database.");
+
     struct ItemRecord *record = Database_getItemByName(db, name);
     check(record != NULL, "Failed to load item.");
 
-    struct DescriptionRecord *description = Database_getDescription(db, record->description_id);
-    check(description != NULL, "Failed to load description.");
-
-    struct Item *item = Item_create(record->name, description->description);
-    item->id = record->id;
-    return item;
+    return Item_load(db, record->id);
 
 error:
     return NULL;

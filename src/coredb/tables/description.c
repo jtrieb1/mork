@@ -145,7 +145,7 @@ enum MorkResult DescriptionTable_update(struct DescriptionTable *table, struct D
     if (record == NULL) { return MORK_ERROR_DB_RECORD_NULL; }
 
     for (int i = 0; i < MAX_ROWS_DESC; i++) {
-        if (table->rows[i].id == record->id) {
+        if (table->rows[i].set == 1 && table->rows[i].id == record->id) {
             memcpy(&table->rows[i], record, sizeof(struct DescriptionRecord));
             table->rows[i].set = 1;
             return MORK_OK;
@@ -169,7 +169,7 @@ struct DescriptionRecord *DescriptionTable_get(struct DescriptionTable *table, u
 
     for (unsigned short i = 0; i < MAX_ROWS_DESC; i++) {
         struct DescriptionRecord *rec = &table->rows[i];
-        if (rec->id == id) {
+        if (rec->set == 1 && rec->id == id) {
             return rec;
         }
     }
@@ -191,7 +191,7 @@ struct DescriptionRecord *DescriptionTable_get_next(struct DescriptionTable *tab
     check(id != 0, "Expected valid ID");
 
     for (int i = 0; i < MAX_ROWS_DESC; i++) {
-        if (table->rows[i].id == id) {
+        if (table->rows[i].id == id && table->rows[i].set == 1) {
             return &table->rows[table->rows[i].next_id];
         }
     }
@@ -213,7 +213,7 @@ struct DescriptionRecord *DescriptionTable_get_by_prefix(struct DescriptionTable
     check(prefix != NULL && strcmp(prefix, "") != 0, "Expected valid prefix, got empty or NULL");
 
     for (int i = 0; i < MAX_ROWS_DESC; i++) {
-        if (strncmp(table->rows[i].description, prefix, strlen(prefix)) == 0) {
+        if (table->rows[i].set == 1 && strncmp(table->rows[i].description, prefix, strlen(prefix)) == 0) {
             return &table->rows[i];
         }
     }
@@ -234,7 +234,7 @@ enum MorkResult DescriptionTable_delete(struct DescriptionTable *table, unsigned
     if (id == 0) { return MORK_ERROR_DB_INVALID_ID; }
 
     for (int i = 0; i < MAX_ROWS_DESC; i++) {
-        if (table->rows[i].id == id) {
+        if (table->rows[i].id == id && table->rows[i].set == 1) {
             table->rows[i].set = 0;
             return MORK_OK;
         }

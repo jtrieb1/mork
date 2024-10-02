@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../coredb/db.h"
 #include "../utils/error.h"
 
 #include <stdio.h>
@@ -46,4 +47,4 @@ struct Action {
 struct Action *Action_create(const char *input);
 enum MorkResult Action_destroy(struct Action *action);
 
-enum MorkResult Action_parse(struct Action *action);
+enum MorkResult Action_parse(struct Action *action, struct Database *db);

@@ -17,16 +17,12 @@ struct BaseGame *BaseGame_create(struct Character *player)
     struct TerminalSegment *header = TS_new();
     check(header != NULL, "Failed to create header.");
     TS_concatText(TS_setGreen(TS_setBold(header)), "Mork");
-    TS_destroy(game->screen->header);
-    game->screen->header = header;
+    ScreenState_headerAppendInline(game->screen, header);
 
     struct TerminalSegment *statusBar = TS_new();
     check(statusBar != NULL, "Failed to create status bar.");
-    TS_setCursorToScreenBottom(statusBar);
-    TS_concatText(TS_setBold(TS_setWhite(statusBar)), "Health: ");
-    TS_concatText(TS_setGreen(statusBar),              "100/100");
-    TS_destroy(game->screen->statusBar);
-    game->screen->statusBar = statusBar;
+    ScreenState_statusBarSet(game->screen, "Health: ");
+    ScreenState_statusBarAppendInline(game->screen, TS_setGreen(TS_concatText(TS_new(), "110/110")));
 
     for (int i = 0; i < MAX_HISTORY; i++) {
         game->history[i] = NULL;
@@ -48,9 +44,6 @@ enum MorkResult BaseGame_refreshScreen(struct BaseGame *game)
     ScreenState_print(game->screen);
 
     return MORK_OK;
-
-error:
-    return MORK_ERROR_MODEL_GAME_NULL;
 }
 
 enum MorkResult BaseGame_executeAction(struct Database *db, struct BaseGame *game, struct Action *action)
@@ -63,7 +56,7 @@ enum MorkResult BaseGame_executeAction(struct Database *db, struct BaseGame *gam
     
     if (result != NULL) {
         // This adds to the text onscreen, not overwriting context lines
-        ScreenState_textAppend(game->screen, result);
+        ScreenState_textReplace(game->screen, result);
 
         // Update our status bar
         char *playerHealth = calloc(1, 10);
@@ -605,6 +598,22 @@ enum MorkResult BaseGame_run(struct Database *db, struct BaseGame *game)
         return MORK_ERROR_MODEL_GAME_NULL;
     }
 
+    // Setup
+    struct TerminalSegment *context = TS_new();
+    TS_concatText(TS_setNormal(TS_setWhite(context)), "You are in ");
+    TS_concatText(TS_setBold(context), game->current_location->name);
+    ScreenState_textReplace(game->screen, context);
+
+    // Status bar
+    char *playerHealth = calloc(1, 10);
+    check_mem(playerHealth);
+    sprintf(playerHealth, "%hu/%hu", game->player->health, game->player->max_health);
+
+    ScreenState_statusBarSet(game->screen, "Health: ");
+    struct TerminalSegment *green = TS_setGreen(TS_new());
+    ScreenState_statusBarAppendInline(game->screen, TS_concatText(green, playerHealth));
+    free(playerHealth);
+
     // Run the game loop
     while (1) {
         BaseGame_refreshScreen(game);
@@ -614,19 +623,25 @@ enum MorkResult BaseGame_run(struct Database *db, struct BaseGame *game)
         size_t len = 0;
         ssize_t read = getline(&input, &len, stdin);
         if (read == -1) {
-            log_err("Failed to read input.");
             return MORK_ERROR_MODEL_GAME_INPUT;
+        }
+        if (input[read - 1] == '\n') {
+            input[read - 1] = '\0';
+        }
+        if (strcmp(input, "quit") == 0) {
+            BaseGame_quit(db, game);
+        }
+        if (strcmp(input, "\n") == 0 || strcmp(input, "") == 0) {
+            continue;
         }
 
         // Parse the input
         struct Action *action = Action_create(input);
         if (action == NULL) {
-            log_err("Failed to create action.");
             return MORK_ERROR_MODEL_ACTION_NULL;
         }
-        enum MorkResult res = Action_parse(action);
+        enum MorkResult res = Action_parse(action, db);
         if (res != MORK_OK) {
-            log_err("Failed to parse action, error code: %d", res);
             Action_destroy(action);
             continue;
         }
@@ -634,14 +649,11 @@ enum MorkResult BaseGame_run(struct Database *db, struct BaseGame *game)
         // Execute the action
         res = BaseGame_executeAction(db, game, action);
         if (res != MORK_OK) {
-            log_err("Action: %s", input);
-            log_err("Failed to execute action, error code: %d", res);
             return res;
         }
 
         // Check for game over
         if (game->player->health <= 0) {
-            log_info("Game over.");
             break;
         }
 
@@ -650,6 +662,9 @@ enum MorkResult BaseGame_run(struct Database *db, struct BaseGame *game)
     }
 
     return MORK_OK;
+
+error:
+    return MORK_ERROR_MODEL_GAME_NULL;
 }
 
 char *BaseGame_getScreenDisplay(struct BaseGame *game)

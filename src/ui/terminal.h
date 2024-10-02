@@ -66,6 +66,7 @@ void ScreenState_headerSet(struct ScreenState *state, const char *text);
 void ScreenState_headerAppend(struct ScreenState *state, struct TerminalSegment *segment);
 void ScreenState_headerAppendInline(struct ScreenState *state, struct TerminalSegment *segment);
 void ScreenState_textSet(struct ScreenState *state, const char *text);
+void ScreenState_textReplace(struct ScreenState *state, struct TerminalSegment *segment);
 void ScreenState_textAppend(struct ScreenState *state, struct TerminalSegment *segment);
 void ScreenState_textAppendInline(struct ScreenState *state, struct TerminalSegment *segment);
 void ScreenState_statusBarSet(struct ScreenState *state, const char *text);

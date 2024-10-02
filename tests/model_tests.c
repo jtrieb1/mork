@@ -428,7 +428,7 @@ char *test_create_action()
     mu_assert(action != NULL, "Failed to create action.");
     mu_assert(strcmp(action->raw_input, input) == 0, "Failed to set raw input.");
 
-    enum MorkResult parseResult = Action_parse(action);
+    enum MorkResult parseResult = Action_parse(action, NULL); // Don't need DB since we never touch it here
     mu_assert(parseResult == MORK_OK, "Failed to parse action.");
 
     mu_assert(strcmp(action->verb, "look") == 0, "Failed to parse verb.");
@@ -444,7 +444,7 @@ char *test_create_action()
     mu_assert(action != NULL, "Failed to create action.");
     mu_assert(strcmp(action->raw_input, input) == 0, "Failed to set raw input.");
 
-    parseResult = Action_parse(action);
+    parseResult = Action_parse(action, NULL);
     mu_assert(parseResult == MORK_OK, "Failed to parse action.");
 
     mu_assert(strcmp(action->verb, "move") == 0, "Failed to parse verb.");
@@ -465,7 +465,7 @@ char *test_parse_actions()
     mu_assert(action != NULL, "Failed to create action.");
     mu_assert(strcmp(action->raw_input, input) == 0, "Failed to set raw input.");
 
-    enum MorkResult parseResult = Action_parse(action);
+    enum MorkResult parseResult = Action_parse(action, NULL);
     mu_assert(parseResult == MORK_OK, "Failed to parse action.");
 
     mu_assert(strcmp(action->verb, "look") == 0, "Failed to parse verb.");
@@ -481,7 +481,7 @@ char *test_parse_actions()
     mu_assert(action != NULL, "Failed to create action.");
     mu_assert(strcmp(action->raw_input, input) == 0, "Failed to set raw input.");
 
-    parseResult = Action_parse(action);
+    parseResult = Action_parse(action, NULL);
     mu_assert(parseResult == MORK_OK, "Failed to parse action.");
 
     mu_assert(strcmp(action->verb, "move") == 0, "Failed to parse verb.");
@@ -497,7 +497,7 @@ char *test_parse_actions()
     mu_assert(action != NULL, "Failed to create action.");
     mu_assert(strcmp(action->raw_input, input) == 0, "Failed to set raw input.");
 
-    parseResult = Action_parse(action);
+    parseResult = Action_parse(action, NULL);
     mu_assert(parseResult == MORK_OK, "Failed to parse action.");
 
     mu_assert(strcmp(action->verb, "inventory") == 0, "Failed to parse verb.");
@@ -513,7 +513,7 @@ char *test_parse_actions()
     mu_assert(action != NULL, "Failed to create action.");
     mu_assert(strcmp(action->raw_input, input) == 0, "Failed to set raw input.");
 
-    parseResult = Action_parse(action);
+    parseResult = Action_parse(action, NULL);
     mu_assert(parseResult == MORK_OK, "Failed to parse action.");
 
     mu_assert(strcmp(action->verb, "help") == 0, "Failed to parse verb.");
@@ -543,7 +543,7 @@ char *test_execute_action()
 
     const char *input = "look north";
     struct Action *action = Action_create(input);
-    Action_parse(action);
+    Action_parse(action, NULL);
 
     enum MorkResult res = BaseGame_executeAction(db, game, action);
     mu_assert(res == MORK_OK, "Failed to execute action.");
@@ -557,7 +557,7 @@ char *test_execute_action()
 
     input = "move down";
     action = Action_create(input);
-    Action_parse(action);
+    Action_parse(action, NULL);
 
     res = BaseGame_executeAction(db, game, action);
     mu_assert(res == MORK_OK, "Failed to execute action.");

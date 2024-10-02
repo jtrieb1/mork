@@ -1,6 +1,7 @@
 #include "action.h"
 
 #include <lcthw/dbg.h>
+#include <ctype.h>
 
 struct Action *Action_create(const char *input)
 {
@@ -27,30 +28,44 @@ enum MorkResult Action_destroy(struct Action *action)
     return MORK_OK;
 }
 
-enum ActionTargetKind Action_getTargetKind(struct Action *action)
+enum ActionTargetKind Action_getTargetKind(struct Action *action, struct Database *db)
 {
     if (action == NULL) {
         return TARGET_NONE;
     }
 
-    if (strcmp(action->noun, "north") == 0) {
+    if (strstr(action->noun, "north") != NULL) {
         return TARGET_NORTH;
-    } else if (strcmp(action->noun, "south") == 0) {
+    } else if (strstr(action->noun, "south") != NULL) {
         return TARGET_SOUTH;
-    } else if (strcmp(action->noun, "east") == 0) {
+    } else if (strstr(action->noun, "east") != NULL) {
         return TARGET_EAST;
-    } else if (strcmp(action->noun, "west") == 0) {
+    } else if (strstr(action->noun, "west") != NULL) {
         return TARGET_WEST;
-    } else if (strcmp(action->noun, "up") == 0) {
+    } else if (strstr(action->noun, "up") != NULL) {
         return TARGET_UP;
-    } else if (strcmp(action->noun, "down") == 0) {
+    } else if (strstr(action->noun, "down") != NULL) {
         return TARGET_DOWN;
+    } else if (strstr(action->noun, "self") != NULL) {
+        return TARGET_SELF;
     } else {
+        // Check for item
+        struct ItemRecord *item = Database_getItemByName(db, action->noun);
+        if (item != NULL) {
+            return TARGET_ITEM;
+        }
+
+        // Check for character
+        struct CharacterRecord *character = Database_getCharacterByName(db, action->noun);
+        if (character != NULL) {
+            return TARGET_CHARACTER;
+        }
+
         return TARGET_NONE;
     }
 }
 
-enum MorkResult Action_parse(struct Action *action)
+enum MorkResult Action_parse(struct Action *action, struct Database *db)
 {
     // Expect all inputs to be either "verb noun" or just "verb"
     char *verb = strtok(action->raw_input, " ");
@@ -85,20 +100,29 @@ enum MorkResult Action_parse(struct Action *action)
         return MORK_ERROR_MODEL_ACTION_PARSE_NOUN;
     }
 
-    strncpy(action->noun, noun, MAX_INPUT);
-    action->noun[MAX_INPUT - 1] = '\0';
+    // Strip any leading or trailing whitespace
+    while (isspace(*noun)) {
+        noun++;
+    }
+    char *end = noun + strlen(noun) - 1;
+    while (end > noun && isspace(*end)) {
+        end--;
+    }
+    end[1] = '\0';
+
+    strcpy(action->noun, noun);
 
     // Check for movement
     if (strstr(action->verb, "move") != NULL) {
         action->kind = ACTION_MOVE;
-        action->target_kind = Action_getTargetKind(action);
+        action->target_kind = Action_getTargetKind(action, db);
         return MORK_OK;
     }
 
     // Check for look
     if (strstr(action->verb, "look") != NULL) {
         action->kind = ACTION_LOOK;
-        action->target_kind = Action_getTargetKind(action);
+        action->target_kind = Action_getTargetKind(action, db);
         return MORK_OK;
     }
 

@@ -553,6 +553,9 @@ struct TerminalSegment *TS_appendInline(struct TerminalSegment *dest, struct Ter
 
 unsigned char TS_isEmpty(struct TerminalSegment *frame)
 {
+    if (frame == NULL || frame->rawTextRepresentation == NULL) {
+        return 1;
+    }
     // Don't count control codes
     for (size_t i = 0; i < strlen(frame->rawTextRepresentation) - 1; i++) {
         if (frame->rawTextRepresentation[i] == '\033') {
@@ -728,6 +731,8 @@ char *ScreenState_getDisplay(struct ScreenState *state)
 
     struct TerminalSegment *display = TS_new();
     struct TerminalSegment *header_backup = TS_clone(state->header);
+    struct TerminalSegment *text_backup = TS_clone(state->text);
+    struct TerminalSegment *statusBar_backup = TS_clone(state->statusBar);
 
     check_mem(display);
     display = TS_appendInline(display, state->header); // Remember, calling TS_append will destroy the source segment
@@ -739,10 +744,10 @@ char *ScreenState_getDisplay(struct ScreenState *state)
         display = TS_append(display, state->text);
     }
     int textRow = display->cursorRow + 1;
-    state->text = TS_setCursorToRow(TS_new(), state->header->cursorRow + 1);
+    state->text = text_backup;
 
     display = TS_appendInline(display, state->statusBar); // Since status bar sets itself to the bottom of the screen, we can just append it inline
-    state->statusBar = TS_setCursorToScreenBottom(TS_new());
+    state->statusBar = statusBar_backup;
 
     TS_setCursorToRow(display, textRow);
 
@@ -801,6 +806,13 @@ void ScreenState_textSet(struct ScreenState *state, const char *text)
 {
     TS_destroy(state->text);
     state->text = TS_concatText(TS_new(), text);
+    TS_presetCursorToRow(state->text, state->header->cursorRow + 1);
+}
+
+void ScreenState_textReplace(struct ScreenState *state, struct TerminalSegment *segment)
+{
+    TS_destroy(state->text);
+    state->text = segment;
     TS_presetCursorToRow(state->text, state->header->cursorRow + 1);
 }
 

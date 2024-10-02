@@ -2,7 +2,9 @@
 #include "test_settings.h"
 
 #include "../src/coredb/db.h"
+#include "../src/models/action.h"
 #include "../src/models/character.h"
+#include "../src/models/game.h"
 #include "../src/models/inventory.h"
 #include "../src/models/item.h"
 #include "../src/models/location.h"
@@ -370,6 +372,216 @@ char *test_destroy_db_file()
     return NULL;
 }
 
+char *test_create_basegame()
+{
+    struct Character *player = Character_create(
+        "Mork",
+        1,                                            // Level
+        (unsigned char[6]){5, 5, 5, 5, 5, 10},        // Stats in enum order
+        6                                             // Number of stats
+    );
+
+    struct BaseGame *game = BaseGame_create(player);
+    mu_assert(game != NULL, "Failed to create game.");
+    mu_assert(game->player != NULL, "Failed to set player.");
+    mu_assert(game->current_location == NULL, "Failed to set current location.");
+
+    BaseGame_destroy(game);
+
+    return NULL;
+}
+
+char *test_load_basegame()
+{
+    struct Character *player = Character_create(
+        "Mork",
+        1,                                            // Level
+        (unsigned char[6]){5, 5, 5, 5, 5, 10},        // Stats in enum order
+        6                                             // Number of stats
+    );
+
+    struct BaseGame *game = BaseGame_create(player);
+    mu_assert(game != NULL, "Failed to create game.");
+    mu_assert(game->player != NULL, "Failed to set player.");
+    mu_assert(game->current_location == NULL, "Failed to set current location.");
+    BaseGame_setLocation(game, Location_loadByName(db, "Mork's House"));
+    BaseGame_save(db, game);
+
+    BaseGame_destroy(game);
+
+    // Now try to load it
+    game = BaseGame_load(db, 1);
+    mu_assert(game != NULL, "Failed to load game.");
+    mu_assert(game->player != NULL, "Failed to load player.");
+    mu_assert(game->current_location != NULL, "Failed to load current location.");
+
+    BaseGame_destroy(game);
+
+    return NULL;
+}
+
+char *test_create_action()
+{
+    const char *input = "look north";
+    struct Action *action = Action_create(input);
+
+    mu_assert(action != NULL, "Failed to create action.");
+    mu_assert(strcmp(action->raw_input, input) == 0, "Failed to set raw input.");
+
+    enum MorkResult parseResult = Action_parse(action);
+    mu_assert(parseResult == MORK_OK, "Failed to parse action.");
+
+    mu_assert(strcmp(action->verb, "look") == 0, "Failed to parse verb.");
+    mu_assert(action->kind == ACTION_LOOK, "Failed to parse action kind.");
+    mu_assert(strcmp(action->noun, "north") == 0, "Failed to parse noun.");
+    mu_assert(action->target_kind == TARGET_NORTH, "Failed to parse target kind.");
+
+    Action_destroy(action);
+
+    input = "move down";
+    action = Action_create(input);
+
+    mu_assert(action != NULL, "Failed to create action.");
+    mu_assert(strcmp(action->raw_input, input) == 0, "Failed to set raw input.");
+
+    parseResult = Action_parse(action);
+    mu_assert(parseResult == MORK_OK, "Failed to parse action.");
+
+    mu_assert(strcmp(action->verb, "move") == 0, "Failed to parse verb.");
+    mu_assert(action->kind == ACTION_MOVE, "Failed to parse action kind.");
+    mu_assert(strcmp(action->noun, "down") == 0, "Failed to parse noun.");
+    mu_assert(action->target_kind == TARGET_DOWN, "Failed to parse target kind.");
+
+    Action_destroy(action);
+
+    return NULL;
+}
+
+char *test_parse_actions()
+{
+    const char *input = "look north";
+    struct Action *action = Action_create(input);
+
+    mu_assert(action != NULL, "Failed to create action.");
+    mu_assert(strcmp(action->raw_input, input) == 0, "Failed to set raw input.");
+
+    enum MorkResult parseResult = Action_parse(action);
+    mu_assert(parseResult == MORK_OK, "Failed to parse action.");
+
+    mu_assert(strcmp(action->verb, "look") == 0, "Failed to parse verb.");
+    mu_assert(action->kind == ACTION_LOOK, "Failed to parse action kind.");
+    mu_assert(strcmp(action->noun, "north") == 0, "Failed to parse noun.");
+    mu_assert(action->target_kind == TARGET_NORTH, "Failed to parse target kind.");
+
+    Action_destroy(action);
+
+    input = "move south";
+    action = Action_create(input);
+
+    mu_assert(action != NULL, "Failed to create action.");
+    mu_assert(strcmp(action->raw_input, input) == 0, "Failed to set raw input.");
+
+    parseResult = Action_parse(action);
+    mu_assert(parseResult == MORK_OK, "Failed to parse action.");
+
+    mu_assert(strcmp(action->verb, "move") == 0, "Failed to parse verb.");
+    mu_assert(action->kind == ACTION_MOVE, "Failed to parse action kind.");
+    mu_assert(strcmp(action->noun, "south") == 0, "Failed to parse noun.");
+    mu_assert(action->target_kind == TARGET_SOUTH, "Failed to parse target kind.");
+
+    Action_destroy(action);
+
+    input = "inventory";
+    action = Action_create(input);
+
+    mu_assert(action != NULL, "Failed to create action.");
+    mu_assert(strcmp(action->raw_input, input) == 0, "Failed to set raw input.");
+
+    parseResult = Action_parse(action);
+    mu_assert(parseResult == MORK_OK, "Failed to parse action.");
+
+    mu_assert(strcmp(action->verb, "inventory") == 0, "Failed to parse verb.");
+    mu_assert(action->kind == ACTION_INVENTORY, "Failed to parse action kind.");
+    mu_assert(strcmp(action->noun, "") == 0, "Failed to parse noun.");
+    mu_assert(action->target_kind == TARGET_NONE, "Failed to parse target kind.");
+
+    Action_destroy(action);
+
+    input = "help";
+    action = Action_create(input);
+
+    mu_assert(action != NULL, "Failed to create action.");
+    mu_assert(strcmp(action->raw_input, input) == 0, "Failed to set raw input.");
+
+    parseResult = Action_parse(action);
+    mu_assert(parseResult == MORK_OK, "Failed to parse action.");
+
+    mu_assert(strcmp(action->verb, "help") == 0, "Failed to parse verb.");
+    mu_assert(action->kind == ACTION_HELP, "Failed to parse action kind.");
+    mu_assert(strcmp(action->noun, "") == 0, "Failed to parse noun.");
+    mu_assert(action->target_kind == TARGET_NONE, "Failed to parse target kind.");
+
+    Action_destroy(action);
+
+    return NULL;
+}
+
+char *test_execute_action()
+{
+    struct Character *player = Character_create(
+        "Mork",
+        1,                                            // Level
+        (unsigned char[6]){5, 5, 5, 5, 5, 10},        // Stats in enum order
+        6                                             // Number of stats
+    );
+
+    struct BaseGame *game = BaseGame_create(player);
+    mu_assert(game != NULL, "Failed to create game.");
+    mu_assert(game->player != NULL, "Failed to set player.");
+    mu_assert(game->current_location == NULL, "Failed to set current location.");
+    BaseGame_setLocation(game, Location_loadByName(db, "Mork's House"));
+
+    const char *input = "look north";
+    struct Action *action = Action_create(input);
+    Action_parse(action);
+
+    enum MorkResult res = BaseGame_executeAction(db, game, action);
+    mu_assert(res == MORK_OK, "Failed to execute action.");
+
+    struct Action *lastAction = game->history[0];
+    mu_assert(lastAction != NULL, "Failed to save action to history.");
+    mu_assert(strcmp(lastAction->verb, "look") == 0, "Failed to save verb to history.");
+    mu_assert(lastAction->kind == ACTION_LOOK, "Failed to save action kind to history.");
+    mu_assert(strcmp(lastAction->noun, "north") == 0, "Failed to save noun to history.");
+    mu_assert(lastAction->target_kind == TARGET_NORTH, "Failed to save target kind to history.");
+
+    input = "move down";
+    action = Action_create(input);
+    Action_parse(action);
+
+    res = BaseGame_executeAction(db, game, action);
+    mu_assert(res == MORK_OK, "Failed to execute action.");
+
+    lastAction = game->history[0];
+    mu_assert(lastAction != NULL, "Failed to save action to history.");
+    mu_assert(strcmp(lastAction->verb, "move") == 0, "Failed to save verb to history.");
+    mu_assert(lastAction->kind == ACTION_MOVE, "Failed to save action kind to history.");
+    mu_assert(strcmp(lastAction->noun, "down") == 0, "Failed to save noun to history.");
+    mu_assert(lastAction->target_kind == TARGET_DOWN, "Failed to save target kind to history.");
+
+    struct Action *theOneBeforeThat = game->history[1];
+    mu_assert(theOneBeforeThat != NULL, "Failed to save action to history.");
+    log_info("The one before that: %s", theOneBeforeThat->raw_input);
+    mu_assert(strcmp(theOneBeforeThat->verb, "look") == 0, "Failed to save verb to history.");
+    mu_assert(theOneBeforeThat->kind == ACTION_LOOK, "Failed to save action kind to history.");
+    mu_assert(strcmp(theOneBeforeThat->noun, "north") == 0, "Failed to save noun to history.");
+    mu_assert(theOneBeforeThat->target_kind == TARGET_NORTH, "Failed to save target kind to history.");
+
+    BaseGame_destroy(game);
+
+    return NULL;
+}
+
 char *all_tests()
 {
     mu_suite_start();
@@ -386,6 +598,11 @@ char *all_tests()
     mu_run_test(test_add_item_to_location);
     mu_run_test(test_remove_item_from_location);
     mu_run_test(test_update_item_in_location);
+    mu_run_test(test_create_basegame);
+    mu_run_test(test_load_basegame);
+    mu_run_test(test_create_action);
+    mu_run_test(test_parse_actions);
+    mu_run_test(test_execute_action);
     mu_run_test(test_destroy_db);
     mu_run_test(test_destroy_db_file);
 

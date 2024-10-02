@@ -1,4 +1,5 @@
 #include "game.h"
+#include "../ui/terminal.h"
 
 #include <lcthw/dbg.h>
 #include <sys/types.h>
@@ -11,6 +12,21 @@ struct BaseGame *BaseGame_create(struct Character *player)
 
     game->player = player;
     game->current_location = NULL;
+    game->screen = ScreenState_create();
+
+    struct TerminalSegment *header = TS_new();
+    check(header != NULL, "Failed to create header.");
+    TS_concatText(TS_setGreen(TS_setBold(header)), "Mork");
+    TS_destroy(game->screen->header);
+    game->screen->header = header;
+
+    struct TerminalSegment *statusBar = TS_new();
+    check(statusBar != NULL, "Failed to create status bar.");
+    TS_setCursorToScreenBottom(statusBar);
+    TS_concatText(TS_setBold(TS_setWhite(statusBar)), "Health: ");
+    TS_concatText(TS_setGreen(statusBar),              "100/100");
+    TS_destroy(game->screen->statusBar);
+    game->screen->statusBar = statusBar;
 
     for (int i = 0; i < MAX_HISTORY; i++) {
         game->history[i] = NULL;
@@ -22,12 +38,85 @@ error:
     return NULL;
 }
 
+enum MorkResult BaseGame_refreshScreen(struct BaseGame *game)
+{
+    if (game == NULL) {
+        return MORK_ERROR_MODEL_GAME_NULL;
+    }
+    
+    ScreenState_clear();
+    ScreenState_print(game->screen);
+
+    return MORK_OK;
+
+error:
+    return MORK_ERROR_MODEL_GAME_NULL;
+}
+
+enum MorkResult BaseGame_executeAction(struct Database *db, struct BaseGame *game, struct Action *action)
+{
+    if (game == NULL) {
+        return MORK_ERROR_MODEL_GAME_NULL;
+    }
+
+    struct TerminalSegment *result = BaseGame_execute(db, game, action);
+    
+    if (result != NULL) {
+        // This adds to the text onscreen, not overwriting context lines
+        ScreenState_textAppend(game->screen, result);
+
+        // Update our status bar
+        char *playerHealth = calloc(1, 10);
+        check_mem(playerHealth);
+        sprintf(playerHealth, "%hu/%hu", game->player->health, game->player->max_health);
+
+        ScreenState_statusBarSet(game->screen, "Health: ");
+        struct TerminalSegment *green = TS_setGreen(TS_new());
+        ScreenState_statusBarAppendInline(game->screen, TS_concatText(green, playerHealth));
+        free(playerHealth);
+
+        // Append to history
+        for (int i = MAX_HISTORY - 1; i > 0; i--) {
+            game->history[i] = game->history[i - 1];
+        }
+        game->history[0] = action;
+    }
+
+    return MORK_OK;
+
+error:
+    return MORK_ERROR_MODEL_GAME_NULL;
+}
+
 enum MorkResult BaseGame_destroy(struct BaseGame *game)
 {
     if (game == NULL) {
         return MORK_ERROR_MODEL_GAME_NULL;
     }
+    Character_destroy(game->player);
+    game->player = NULL;
+    Location_destroy(game->current_location);
+    game->current_location = NULL;
+    ScreenState_destroy(game->screen);
+    game->screen = NULL;
+
+    for (int i = 0; i < MAX_HISTORY; i++) {
+        if (game->history[i] != NULL) {
+            Action_destroy(game->history[i]);
+            game->history[i] = NULL;
+        }
+    }
+
     free(game);
+    return MORK_OK;
+}
+
+enum MorkResult BaseGame_setHeader(struct BaseGame *game, struct TerminalSegment *header)
+{
+    if (game == NULL) {
+        return MORK_ERROR_MODEL_GAME_NULL;
+    }
+    ScreenState_headerSet(game->screen, header->rawTextRepresentation);
     return MORK_OK;
 }
 
@@ -156,79 +245,71 @@ error:
     return NULL;
 }
 
-enum MorkResult BaseGame_move(struct Database *db, struct BaseGame *game, enum ActionTargetKind target)
+struct TerminalSegment *BaseGame_move(struct Database *db, struct BaseGame *game, enum ActionTargetKind target)
 {
     if (game == NULL) {
-        return MORK_ERROR_MODEL_GAME_NULL;
+        return NULL;
     }
 
     struct Location *location = game->current_location;
+    struct TerminalSegment *ts = TS_setNormal(TS_setWhite(TS_new()));
     // Exit mapping is [NORTH, SOUTH, EAST, WEST, UP, DOWN]
+
+    int exit_position = -1;
 
     switch (target) {
         case TARGET_NORTH:
-            if (location->exitIDs[0] != 0) {
-                struct Location *new_location = Location_load(db, location->exitIDs[0]);
-                if (new_location != NULL) {
-                    BaseGame_setLocation(game, new_location);
-                }
-            }
+            exit_position = 1;
             break;
         case TARGET_SOUTH:
-            if (location->exitIDs[1] != 0) {
-                struct Location *new_location = Location_load(db, location->exitIDs[1]);
-                if (new_location != NULL) {
-                    BaseGame_setLocation(game, new_location);
-                }
-            }
+            exit_position = 2;
             break;
         case TARGET_EAST:
-            if (location->exitIDs[2] != 0) {
-                struct Location *new_location = Location_load(db, location->exitIDs[2]);
-                if (new_location != NULL) {
-                    BaseGame_setLocation(game, new_location);
-                }
-            }
+            exit_position = 3;
             break;
         case TARGET_WEST:
-            if (location->exitIDs[3] != 0) {
-                struct Location *new_location = Location_load(db, location->exitIDs[3]);
-                if (new_location != NULL) {
-                    BaseGame_setLocation(game, new_location);
-                }
-            }
+            exit_position = 4;
             break;
         case TARGET_UP:
-            if (location->exitIDs[4] != 0) {
-                struct Location *new_location = Location_load(db, location->exitIDs[4]);
-                if (new_location != NULL) {
-                    BaseGame_setLocation(game, new_location);
-                }
-            }
+            exit_position = 5;
             break;
         case TARGET_DOWN:
-            if (location->exitIDs[5] != 0) {
-                struct Location *new_location = Location_load(db, location->exitIDs[5]);
-                if (new_location != NULL) {
-                    BaseGame_setLocation(game, new_location);
-                }
-            }
+            exit_position = 6;
             break;
         default:
             break;
     }
 
-    return MORK_OK;
+    if (exit_position == -1) {
+        return NULL;
+    }
+
+    int exit_id = location->exitIDs[exit_position];
+    if (exit_id == 0) {
+        TS_concatText(ts, "You can't go that way.");
+        return ts;
+    }
+
+    struct Location *new_location = Location_load(db, exit_id);
+    if (new_location == NULL) {
+        TS_concatText(ts, "Whoa, something real weird happened. You sure that place exists?");
+        return ts;
+    }
+
+    BaseGame_setLocation(game, new_location);
+    TS_concatText(ts, new_location->description);
+    return ts;
 }
 
-enum MorkResult BaseGame_take(struct Database *db, struct BaseGame *game, enum ActionTargetKind targetkind, char *target)
+struct TerminalSegment *BaseGame_take(struct Database *db, struct BaseGame *game, enum ActionTargetKind targetkind, char *target)
 {
     if (game == NULL) {
-        return MORK_ERROR_MODEL_GAME_NULL;
+        return NULL;
     }
 
     struct Location *location = game->current_location;
     struct Character *player = game->player;
+    struct TerminalSegment *ts = TS_setNormal(TS_setWhite(TS_new()));
 
     switch (targetkind) {
         case TARGET_NONE:
@@ -247,20 +328,26 @@ enum MorkResult BaseGame_take(struct Database *db, struct BaseGame *game, enum A
                 if (strcmp(location->items[i]->name, target) == 0) {
                     // Add item to player inventory
                     Inventory_addItem(player->inventory, location->items[i]);
+                    TS_concatText(ts, "You take the ");
+                    TS_concatText(TS_setBold(TS_setYellow(ts)), location->items[i]->name);
+                    TS_concatText(TS_setNormal(TS_setWhite(ts)), ".");
+                    Character_save(db, player);
+                    return ts;
                 }
             }
-            break;
+            return TS_concatText(ts, "What are you trying to take?");
     }
-    return Character_save(db, player) == -1 ? MORK_ERROR_DB_FAILED_SAVE : MORK_OK;
+    return TS_concatText(ts, "You seriously don't think you can take that, do you?");
 }
 
-enum MorkResult BaseGame_drop(struct Database *db, struct BaseGame *game, enum ActionTargetKind targetkind, char *target)
+struct TerminalSegment *BaseGame_drop(struct Database *db, struct BaseGame *game, enum ActionTargetKind targetkind, char *target)
 {
     if (game == NULL) {
-        return MORK_ERROR_MODEL_GAME_NULL;
+        return NULL;
     }
 
     struct Character *player = game->player;
+    struct TerminalSegment *ts = TS_setNormal(TS_setWhite(TS_new()));
 
     switch (targetkind) {
         case TARGET_NONE:
@@ -279,20 +366,27 @@ enum MorkResult BaseGame_drop(struct Database *db, struct BaseGame *game, enum A
                 if (strcmp(player->inventory->items[i]->name, target) == 0) {
                     // Remove item from player inventory
                     Inventory_removeItem(player->inventory, player->inventory->items[i]);
+                    TS_concatText(ts, "You drop the ");
+                    TS_concatText(TS_setBold(TS_setYellow(ts)), player->inventory->items[i]->name);
+                    TS_concatText(TS_setNormal(TS_setWhite(ts)), ".");
+
+                    Character_save(db, player);
+                    return ts;
                 }
             }
-            break;
+            return TS_concatText(ts, "I don't think you're holding one of those.");
     }   
-    return Character_save(db, player) == -1 ? MORK_ERROR_DB_FAILED_SAVE : MORK_OK;
+    return TS_concatText(ts, "What are you talking about? You sound crazy right now.");
 }
 
-enum MorkResult BaseGame_look(struct Database *db, struct BaseGame *game, enum ActionTargetKind targetKind, char *target)
+struct TerminalSegment *BaseGame_look(struct Database *db, struct BaseGame *game, enum ActionTargetKind targetKind, char *target)
 {
     if (game == NULL) {
-        return MORK_ERROR_MODEL_GAME_NULL;
+        return NULL;
     }
 
     struct Location *location = game->current_location;
+    struct TerminalSegment *ts = TS_new();
 
     switch (targetKind) {
         case TARGET_NONE:
@@ -302,108 +396,150 @@ enum MorkResult BaseGame_look(struct Database *db, struct BaseGame *game, enum A
             if (location->exitIDs[0] != 0) {
                 struct Location *new_location = Location_load(db, location->exitIDs[0]);
                 if (new_location != NULL) {
-                    printf("%s\n", new_location->description);
+                    TS_concatText(TS_setNormal(TS_setWhite(ts)), new_location->description);
+                } else {
+                    TS_concatText(TS_setNormal(TS_setWhite(ts)), "There's nothing over there.");
                 }
+            } else {
+                TS_concatText(TS_setNormal(TS_setWhite(ts)), "There's nothing over there.");
             }
-            break;
+            return ts;
         case TARGET_SOUTH:
             // Look at the south exit
             if (location->exitIDs[1] != 0) {
                 struct Location *new_location = Location_load(db, location->exitIDs[1]);
                 if (new_location != NULL) {
-                    printf("%s\n", new_location->description);
+                    TS_concatText(TS_setNormal(TS_setWhite(ts)), new_location->description);
+                } else {
+                    TS_concatText(TS_setNormal(TS_setWhite(ts)), "There's nothing over there.");
                 }
+            } else {
+                TS_concatText(TS_setNormal(TS_setWhite(ts)), "There's nothing over there.");
             }
-            break;
+            return ts;
         case TARGET_EAST:
             // Look at the east exit
             if (location->exitIDs[2] != 0) {
                 struct Location *new_location = Location_load(db, location->exitIDs[2]);
                 if (new_location != NULL) {
-                    printf("%s\n", new_location->description);
+                    TS_concatText(TS_setNormal(TS_setWhite(ts)), new_location->description);
+                } else {
+                    TS_concatText(TS_setNormal(TS_setWhite(ts)), "There's nothing over there.");
                 }
+            } else {
+                TS_concatText(TS_setNormal(TS_setWhite(ts)), "There's nothing over there.");
             }
-            break;
+            return ts;
         case TARGET_WEST:
             // Look at the west exit
             if (location->exitIDs[3] != 0) {
                 struct Location *new_location = Location_load(db, location->exitIDs[3]);
                 if (new_location != NULL) {
-                    printf("%s\n", new_location->description);
+                    TS_concatText(TS_setNormal(TS_setWhite(ts)), new_location->description);
+                } else {
+                    TS_concatText(TS_setNormal(TS_setWhite(ts)), "There's nothing over there.");
                 }
+            } else {
+                TS_concatText(TS_setNormal(TS_setWhite(ts)), "There's nothing over there.");
             }
-            break;
+            return ts;
         case TARGET_UP:
             // Look at the up exit
             if (location->exitIDs[4] != 0) {
                 struct Location *new_location = Location_load(db, location->exitIDs[4]);
                 if (new_location != NULL) {
-                    printf("%s\n", new_location->description);
+                    TS_concatText(TS_setNormal(TS_setWhite(ts)), new_location->description);
+                } else {
+                    TS_concatText(TS_setNormal(TS_setWhite(ts)), "There's nothing up there.");
                 }
+            } else {
+                TS_concatText(TS_setNormal(TS_setWhite(ts)), "There's nothing up there.");
             }
-            break;
+            return ts;
         case TARGET_DOWN:
             // Look at the down exit
             if (location->exitIDs[5] != 0) {
                 struct Location *new_location = Location_load(db, location->exitIDs[5]);
                 if (new_location != NULL) {
-                    printf("%s\n", new_location->description);
+                    TS_concatText(TS_setNormal(TS_setWhite(ts)), new_location->description);
+                } else {
+                    TS_concatText(TS_setNormal(TS_setWhite(ts)), "There's nothing down there.");
                 }
+            } else {
+                TS_concatText(TS_setNormal(TS_setWhite(ts)), "There's nothing down there.");
             }
-            break;
+            return ts;
         case TARGET_ITEM:
             for (int i = 0; i < MAX_ITEMS; i++) {
                 if (strcmp(location->items[i]->name, target) == 0) {
-                    printf("%s\n", location->items[i]->description);
+                    return TS_concatText(TS_setNormal(TS_setWhite(ts)), location->items[i]->description);
                 }
             }
-            break;
+            return TS_concatText(TS_setNormal(TS_setWhite(ts)), "What are you looking at?");
         case TARGET_SELF:
-            break;
+            // Look at the player
+            TS_concatText(TS_setNormal(TS_setWhite(ts)), "You are ");
+            TS_concatText(TS_setBold(TS_setYellow(ts)), game->player->name);
+            TS_concatText(TS_setNormal(TS_setWhite(ts)), ".");
+            return ts;
         case TARGET_CHARACTER:
             break;
         case TARGET_ROOM:
             // Look at the current room
-            printf("%s\n", location->description);
-            break;
+            TS_concatText(TS_setNormal(TS_setWhite(ts)), location->description);
+            return ts;
     }
 
-    return MORK_OK;
+    return TS_concatText(TS_setNormal(TS_setWhite(ts)), "You look around, but see nothing of interest.");
 }
 
-enum MorkResult BaseGame_inventory(struct BaseGame *game)
+struct TerminalSegment *BaseGame_inventory(struct BaseGame *game)
 {
     if (game == NULL) {
-        return MORK_ERROR_MODEL_GAME_NULL;
+        return NULL;
     }
+
+    struct TerminalSegment *ts = TS_new();
+    check(ts != NULL, "Failed to create terminal segment.");
+
+    TS_concatText(TS_setNormal(TS_setWhite(ts)), "Inventory:\n");
 
     struct Character *player = game->player;
 
     for (int i = 0; i < MAX_ITEMS; i++) {
         if (player->inventory->items[i] != NULL) {
-            printf("%s\n", player->inventory->items[i]->name);
+            TS_concatText(TS_setYellow(TS_setBold(ts)), player->inventory->items[i]->name);
+            TS_concatText(TS_setNormal(TS_setWhite(ts)), "\n");
         }
     }
+    return ts;
 
-    return MORK_OK;
+error:
+    return NULL;
 }
 
-enum MorkResult BaseGame_help(struct BaseGame *game)
+struct TerminalSegment *BaseGame_help(struct BaseGame *game)
 {
     if (game == NULL) {
-        return MORK_ERROR_MODEL_GAME_NULL;
+        return NULL;
     }
 
-    printf("Available commands:\n");
-    printf("move [north, south, east, west, up, down]\n");
-    printf("look [north, south, east, west, up, down, item, self, character, room]\n");
-    printf("take [item]\n");
-    printf("drop [item]\n");
-    printf("inventory\n");
-    printf("help\n");
-    printf("quit\n");
+    struct TerminalSegment *frame = TS_new();
+    check(frame != NULL, "Failed to create frame.");
 
-    return MORK_OK;
+    TS_concatText(TS_setNormal(TS_setWhite(frame)), "Commands:\n");
+    TS_concatText(TS_setBold(TS_setWhite(frame)), "look [north, south, east, west, up, down, room, item, self, character]\n");
+    TS_concatText(TS_setBold(TS_setWhite(frame)), "move [north, south, east, west, up, down]\n");
+    TS_concatText(TS_setBold(TS_setWhite(frame)), "take [item]\n");
+    TS_concatText(TS_setBold(TS_setWhite(frame)), "drop [item]\n");
+    TS_concatText(TS_setBold(TS_setWhite(frame)), "inventory\n");
+    TS_concatText(TS_setBold(TS_setWhite(frame)), "help\n");
+    TS_concatText(TS_setBold(TS_setWhite(frame)), "quit\n");
+
+    return frame;
+
+error:
+    return NULL;
 }
 
 void BaseGame_quit(struct Database *db, struct BaseGame *game)
@@ -414,44 +550,53 @@ void BaseGame_quit(struct Database *db, struct BaseGame *game)
     exit(0);
 }
 
-enum MorkResult BaseGame_execute(struct Database *db, struct BaseGame *game, struct Action *action)
+struct TerminalSegment *BaseGame_execute(struct Database *db, struct BaseGame *game, struct Action *action)
 {
     if (game == NULL) {
-        return MORK_ERROR_MODEL_GAME_NULL;
+        return NULL;
     }
     if (action == NULL) {
-        return MORK_ERROR_MODEL_ACTION_NULL;
+        return NULL;
     }
+
+    struct TerminalSegment *frame = TS_new();
+    check(frame != NULL, "Failed to create frame.");
+
+    // Add context to the body frame
+    TS_concatText(TS_setNormal(TS_setWhite(frame)), "You are in ");
+    TS_concatText(TS_setBold(frame), game->current_location->name);
 
     // Execute the action
     switch (action->kind) {
         case ACTION_MOVE:
-            return BaseGame_move(db, game, action->target_kind);
+            TS_append(frame, BaseGame_move(db, game, action->target_kind));
+            break;
         case ACTION_TAKE:
-            return BaseGame_take(db, game, action->target_kind, action->noun);
+            TS_append(frame, BaseGame_take(db, game, action->target_kind, action->noun));
+            break;
         case ACTION_DROP:
-            return BaseGame_drop(db, game, action->target_kind, action->noun);
+            TS_append(frame, BaseGame_drop(db, game, action->target_kind, action->noun));
+            break;
         case ACTION_LOOK:
-            return BaseGame_look(db, game, action->target_kind, action->noun);
+            TS_append(frame, BaseGame_look(db, game, action->target_kind, action->noun));
+            break;
         case ACTION_INVENTORY:
-            return BaseGame_inventory(game);
+            TS_append(frame, BaseGame_inventory(game));
+            break;
         case ACTION_HELP:
-            return BaseGame_help(game);
+            TS_append(frame, BaseGame_help(game));
+            break;
         case ACTION_QUIT:
             BaseGame_quit(db, game);
+            break;
         default:
             break;
     }
 
-    // Add action to history
-    for (int i = 0; i < MAX_HISTORY; i++) {
-        if (game->history[i] == NULL) {
-            game->history[i] = action;
-            break;
-        }
-    }
+    return frame;
 
-    return MORK_OK;
+error:
+    return NULL;
 }
 
 enum MorkResult BaseGame_run(struct Database *db, struct BaseGame *game)
@@ -462,6 +607,8 @@ enum MorkResult BaseGame_run(struct Database *db, struct BaseGame *game)
 
     // Run the game loop
     while (1) {
+        BaseGame_refreshScreen(game);
+
         // Read and parse player input
         char *input = NULL;
         size_t len = 0;
@@ -479,14 +626,16 @@ enum MorkResult BaseGame_run(struct Database *db, struct BaseGame *game)
         }
         enum MorkResult res = Action_parse(action);
         if (res != MORK_OK) {
-            log_err("Failed to parse action.");
-            return res;
+            log_err("Failed to parse action, error code: %d", res);
+            Action_destroy(action);
+            continue;
         }
 
         // Execute the action
-        res = BaseGame_execute(db, game, action);
+        res = BaseGame_executeAction(db, game, action);
         if (res != MORK_OK) {
-            log_err("Failed to execute action.");
+            log_err("Action: %s", input);
+            log_err("Failed to execute action, error code: %d", res);
             return res;
         }
 
@@ -497,9 +646,17 @@ enum MorkResult BaseGame_run(struct Database *db, struct BaseGame *game)
         }
 
         // Cleanup
-        free(input);
         Action_destroy(action);
     }
 
     return MORK_OK;
+}
+
+char *BaseGame_getScreenDisplay(struct BaseGame *game)
+{
+    if (game == NULL) {
+        return NULL;
+    }
+
+    return ScreenState_getDisplay(game->screen);
 }

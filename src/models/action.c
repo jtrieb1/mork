@@ -10,6 +10,8 @@ struct Action *Action_create(const char *input)
     strncpy(action->raw_input, input, MAX_INPUT);
     action->raw_input[MAX_INPUT - 1] = '\0';
 
+    memset(action->result, 0, MAX_OUTPUT);
+
     return action;
 
 error:
@@ -50,47 +52,69 @@ enum ActionTargetKind Action_getTargetKind(struct Action *action)
 
 enum MorkResult Action_parse(struct Action *action)
 {
-    if (action == NULL) {
-        return MORK_ERROR_MODEL_ACTION_NULL;
+    // Expect all inputs to be either "verb noun" or just "verb"
+    char *verb = strtok(action->raw_input, " ");
+    if (verb == NULL) {
+        return MORK_ERROR_MODEL_ACTION_PARSE_VERB;
     }
 
-    char *token = strtok(action->raw_input, " ");
-    if (token == NULL) {
-        action->kind = ACTION_NONE;
-        return MORK_OK;
-    }
-
-    strncpy(action->verb, token, MAX_INPUT);
+    strncpy(action->verb, verb, MAX_INPUT);
     action->verb[MAX_INPUT - 1] = '\0';
 
-    token = strtok(NULL, " ");
-    if (token == NULL) {
-        action->kind = ACTION_NONE;
+    // There may or may not be a noun, check the verb to see if it contains the words
+    // 'inventory', 'help', or 'quit'
+    if (strstr(action->verb, "inventory") != NULL) {
+        action->kind = ACTION_INVENTORY;
+        action->target_kind = TARGET_NONE;
+        return MORK_OK;
+    } else if (strstr(action->verb, "help") != NULL) {
+        action->kind = ACTION_HELP;
+        action->target_kind = TARGET_NONE;
+        return MORK_OK;
+    } else if (strstr(action->verb, "quit") != NULL) {
+        action->kind = ACTION_QUIT;
+        action->target_kind = TARGET_NONE;
         return MORK_OK;
     }
 
-    strncpy(action->noun, token, MAX_INPUT);
-    action->noun[MAX_INPUT - 1] = '\0';
-
-    if (strcmp(action->verb, "move") == 0) {
-        action->kind = ACTION_MOVE;
-    } else if (strcmp(action->verb, "look") == 0) {
-        action->kind = ACTION_LOOK;
-    } else if (strcmp(action->verb, "take") == 0) {
-        action->kind = ACTION_TAKE;
-    } else if (strcmp(action->verb, "drop") == 0) {
-        action->kind = ACTION_DROP;
-    } else if (strcmp(action->verb, "inventory") == 0) {
-        action->kind = ACTION_INVENTORY;
-    } else if (strcmp(action->verb, "help") == 0) {
-        action->kind = ACTION_HELP;
-    } else if (strcmp(action->verb, "quit") == 0) {
-        action->kind = ACTION_QUIT;
-    } else {
+    // Otherwise, deal with the noun
+    char *noun = strtok(NULL, " ");
+    if (noun == NULL) {
         action->kind = ACTION_NONE;
+        action->target_kind = TARGET_NONE;
+        return MORK_ERROR_MODEL_ACTION_PARSE_NOUN;
     }
 
-    action->target_kind = Action_getTargetKind(action);
+    strncpy(action->noun, noun, MAX_INPUT);
+    action->noun[MAX_INPUT - 1] = '\0';
 
-    return MORK_OK;
+    // Check for movement
+    if (strstr(action->verb, "move") != NULL) {
+        action->kind = ACTION_MOVE;
+        action->target_kind = Action_getTargetKind(action);
+        return MORK_OK;
+    }
+
+    // Check for look
+    if (strstr(action->verb, "look") != NULL) {
+        action->kind = ACTION_LOOK;
+        action->target_kind = Action_getTargetKind(action);
+        return MORK_OK;
+    }
+
+    // Check for take
+    if (strstr(action->verb, "take") != NULL) {
+        action->kind = ACTION_TAKE;
+        action->target_kind = TARGET_ITEM;
+        return MORK_OK;
+    }
+
+    // Check for drop
+    if (strstr(action->verb, "drop") != NULL) {
+        action->kind = ACTION_DROP;
+        action->target_kind = TARGET_ITEM;
+        return MORK_OK;
+    }
+
+    return MORK_ERROR_MODEL_ACTION_PARSE_VERB;
 }

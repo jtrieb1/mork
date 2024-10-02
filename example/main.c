@@ -45,18 +45,6 @@ enum Stats {
 const char *dir_name = "/tmp/morkdata";
 const char *dbname = "mork.db";
 
-void set_title_text_format()
-{
-    set_text_bold();
-    set_text_green();
-}
-
-void set_normal_text_format()
-{
-    set_text_normal();
-    set_text_white();
-}
-
 void setup_game_directory(char *full_path)
 {
     // Check if game directory exists
@@ -102,15 +90,6 @@ void setup()
     
     populate_game(game_db);
 
-    clear_screen();
-
-    set_title_text_format();
-    print_centered(TITLE);
-    printf("\n");
-
-    set_normal_text_format();
-    printf("%s\n", INTRO);
-
     Database_destroy(game_db);
     free(full_path);
     return;
@@ -120,32 +99,46 @@ error:
     exit(1);
 }
 
-void refresh()
+struct Character *create_player_menu(struct Database *game_db)
 {
-    clear_screen();
-    set_cursor_to_screen_top();
-    set_title_text_format();
-    print_centered(TITLE);
-    printf("\n\n");
-    set_normal_text_format();
-}
+    char *name = calloc(1, MAX_NAME);
+    unsigned char stats[6] = {0};
 
-struct Character *create_player_menu(struct Database *db)
-{
-    char *name = NULL;
-    unsigned int level = 1;
-    unsigned char stats[6] = {5, 5, 5, 5, 5, 10};
-    unsigned int numStats = 6;
+    ScreenState_clear();
 
-    refresh();
-    printf("Enter your character's name: ");
-    int res = scanf("%ms", &name);
-    check(res != EOF, "Could not read character name");
+    struct ScreenState *screen = ScreenState_create();
 
-    struct Character *player = Character_create(name, level, stats, numStats);
-    check(player != NULL, "Could not create player character");
+    struct TerminalSegment *menuheader = TS_new();
+    check(menuheader != NULL, "Could not create menu");
+    TS_clearScreen(menuheader);
+    TS_setBold(TS_setGreen(menuheader));
+    TS_concatText(menuheader, TITLE);
+    TS_setCentered(menuheader);
+    
+    ScreenState_headerAppend(screen, menuheader);
+    ScreenState_textSet(screen, INTRO);
+    ScreenState_print(screen);
 
-    Character_save(db, player);
+    printf("Welcome to Mork! Please enter your name: ");
+    fgets(name, MAX_NAME, stdin);
+    name[strlen(name) - 1] = '\0';
+
+    printf("Please enter your stats:\n");
+    printf("Strength: ");
+    scanf("%hhu", &stats[STRENGTH]);
+    printf("Dexterity: ");
+    scanf("%hhu", &stats[DEXTERITY]);
+    printf("Intelligence: ");
+    scanf("%hhu", &stats[INTELLIGENCE]);
+    printf("Charisma: ");
+    scanf("%hhu", &stats[CHARISMA]);
+    printf("Wisdom: ");
+    scanf("%hhu", &stats[WISDOM]);
+    printf("Funkiness: ");
+    scanf("%hhu", &stats[FUNKINESS]);
+
+    struct Character *player = Character_create(name, 1, stats, 6);
+    Character_save(game_db, player);
 
     return player;
 
@@ -161,13 +154,18 @@ int main()
     check(game_db != NULL, "Could not create database");
     enum MorkResult result = Database_open(game_db, "/tmp/morkdata/mork.db");
     check(game_db != NULL, "Could not open database");
-    log_info("Result of opening DB: %d", result);
     check(result == MORK_OK, "Could not open database");
 
     struct Character *player = create_player_menu(game_db);
 
     struct BaseGame *game = BaseGame_create(player);
     check(game != NULL, "Could not create game");
+
+    struct TerminalSegment *header = TS_new();
+    check(header != NULL, "Could not create header");
+    TS_setCentered(TS_concatText(TS_setGreen(TS_setBold(header)), TITLE));
+
+    BaseGame_setHeader(game, header);
 
     struct Location *start = Location_loadByName(game_db, "Your Apartment");
     check(start != NULL, "Could not load starting location");

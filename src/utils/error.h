@@ -33,6 +33,8 @@ enum MorkResult {
     MORK_ERROR_MODEL_ITEM_NULL, // Item is NULL
     MORK_ERROR_MODEL_ITEM_NOT_FOUND, // Item not found
     MORK_ERROR_MODEL_ACTION_NULL, // Action is NULL
+    MORK_ERROR_MODEL_ACTION_PARSE_VERB, // Error parsing action verb
+    MORK_ERROR_MODEL_ACTION_PARSE_NOUN, // Error parsing action noun
     MORK_ERROR_MODEL_INVENTORY_FULL, // Inventory is full
     MORK_ERROR_MODEL_INVENTORY_ITEM_NOT_FOUND, // Item not found in inventory
     MORK_ERROR_MODEL_GAME_NULL, // Game is NULL

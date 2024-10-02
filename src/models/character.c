@@ -173,6 +173,7 @@ struct Character *Character_fromRecord(struct Database *db, struct CharacterReco
     free(stats);
 
     // Destroy the dummy inventory that was created during character creation
+    Inventory_destroy(character->inventory);
     character->inventory = Inventory_load(db, rec.id);
 
     return character;

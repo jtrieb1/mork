@@ -14,4 +14,4 @@ const char *INTRO = ""
 "Written by Jacob Triebwasser, contact at \n"
 "jacob.triebwasser@gmail.com\n"
 "\n"
-"Type 'start' to start or 'quit' to quit.\n";
+"Press Enter to start.\n";

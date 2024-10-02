@@ -25,7 +25,6 @@ char *test_create()
     mu_assert(game->current_location == NULL, "Failed to set current_location.");
 
     BaseGame_destroy(game);
-    Character_destroy(player);
     Database_destroy(db);
     return NULL;
 }

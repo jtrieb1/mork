@@ -68,7 +68,7 @@ enum MorkResult Inventory_destroy(struct Inventory *inventory)
     }
     for (int i = 0; i < MAX_INVENTORY_ITEMS; i++) {
         if (inventory->items[i] != NULL) {
-            return Item_destroy(inventory->items[i]);
+            Item_destroy(inventory->items[i]);
         }
     }
 

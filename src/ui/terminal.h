@@ -1,46 +1,73 @@
+#pragma once
+
 #include "../models/character.h"
 #include "../models/location.h"
 
 void clear_screen();
 
-// Text style
-void set_text_bold();
-void set_text_dim();
-void set_text_underlined();
-void set_text_blink();
-void set_text_normal();
+// We assume an 80 character wide screen with 24 lines
+// We'll allow for a 1 character buffer on each side
 
-// Text color
-void set_text_green();
-void set_text_white();
-void set_text_red();
-void set_text_yellow();
-void set_text_blue();
+// The header will be at most 5 lines, and 78 characters wide
+struct TerminalSegment {
+    int cursorCol;
+    int cursorRow;
+    char *rawTextRepresentation;
+};
 
-// Positioning the cursor
-void set_cursor_to_screen_top();
-void set_cursor_to_screen_bottom();
-void set_cursor_to_screen_center();
-void set_cursor_to_line_start();
-void set_cursor_to_line_position(int index);
-void get_cursor_position(int *col, int *row);
-void get_cursor_row(int *row);
-void get_cursor_col(int *col);
-void set_cursor_to_col_row(int col, int row);
-void set_cursor_to_row(int line);
+void TS_calculate_cursor_position_from_raw(struct TerminalSegment *frame);
 
-// Clearing the line
-void clear_line();
+struct TerminalSegment *TS_new();
+struct TerminalSegment *TS_clone(struct TerminalSegment *frame);
+void TS_destroy(struct TerminalSegment *frame);
+void TS_print(struct TerminalSegment *frame);
+struct TerminalSegment *TS_concatText(struct TerminalSegment *frame, const char *text);
+struct TerminalSegment *TS_setBold(struct TerminalSegment *frame);
+struct TerminalSegment *TS_setDim(struct TerminalSegment *frame);
+struct TerminalSegment *TS_setUnderlined(struct TerminalSegment *frame);
+struct TerminalSegment *TS_setBlink(struct TerminalSegment *frame);
+struct TerminalSegment *TS_setNormal(struct TerminalSegment *frame);
+struct TerminalSegment *TS_setGreen(struct TerminalSegment *frame);
+struct TerminalSegment *TS_setWhite(struct TerminalSegment *frame);
+struct TerminalSegment *TS_setRed(struct TerminalSegment *frame);
+struct TerminalSegment *TS_setYellow(struct TerminalSegment *frame);
+struct TerminalSegment *TS_setBlue(struct TerminalSegment *frame);
+struct TerminalSegment *TS_setCentered(struct TerminalSegment *frame);
+struct TerminalSegment *TS_setCursorPosition(struct TerminalSegment *frame, int col, int row);
+struct TerminalSegment *TS_clearLine(struct TerminalSegment *frame);
+struct TerminalSegment *TS_setCursorToLineStart(struct TerminalSegment *frame);
+struct TerminalSegment *TS_setCursorToLinePosition(struct TerminalSegment *frame, int index);
+struct TerminalSegment *TS_setCursorToScreenTop(struct TerminalSegment *frame);
+struct TerminalSegment *TS_setCursorToScreenBottom(struct TerminalSegment *frame);
+struct TerminalSegment *TS_setCursorToScreenCenter(struct TerminalSegment *frame);
+struct TerminalSegment *TS_setCursorToRow(struct TerminalSegment *frame, int row);
+struct TerminalSegment *TS_append(struct TerminalSegment *dest, struct TerminalSegment *src);
+struct TerminalSegment *TS_appendInline(struct TerminalSegment *dest, struct TerminalSegment *src);
+struct TerminalSegment *TS_clearScreen(struct TerminalSegment *frame);
 
-// Composite actions
-void refresh_screen();
-void print_centered(const char *text);
-void print_status_bar(struct Character *player, struct Location *current_location);
+struct TerminalSegment *TS_presetCursorToRow(struct TerminalSegment *frame, int row);
 
-// Printing sections of the status bar
-void print_status_bar_left(unsigned short health, unsigned short max_health, unsigned short mana, unsigned short max_mana);
-void print_status_bar_center(char *current_location);
-void print_status_bar_right(unsigned short level, unsigned short experience, unsigned short experience_to_next_level);
+unsigned char TS_isEmpty(struct TerminalSegment *frame);
+unsigned char TS_getCursorPosition(struct TerminalSegment *frame, int *col, int *row);
 
-// Printing the prompt
-void print_prompt(const char *prompt);
+struct ScreenState {
+    struct TerminalSegment *header;
+    struct TerminalSegment *text;
+    struct TerminalSegment *statusBar;
+};
+
+struct ScreenState *ScreenState_create();
+void ScreenState_destroy(struct ScreenState *state);
+void ScreenState_print(struct ScreenState *state);
+char *ScreenState_getDisplay(struct ScreenState *state);
+void ScreenState_clear();
+
+void ScreenState_headerSet(struct ScreenState *state, const char *text);
+void ScreenState_headerAppend(struct ScreenState *state, struct TerminalSegment *segment);
+void ScreenState_headerAppendInline(struct ScreenState *state, struct TerminalSegment *segment);
+void ScreenState_textSet(struct ScreenState *state, const char *text);
+void ScreenState_textAppend(struct ScreenState *state, struct TerminalSegment *segment);
+void ScreenState_textAppendInline(struct ScreenState *state, struct TerminalSegment *segment);
+void ScreenState_statusBarSet(struct ScreenState *state, const char *text);
+void ScreenState_statusBarAppend(struct ScreenState *state, struct TerminalSegment *segment);
+void ScreenState_statusBarAppendInline(struct ScreenState *state, struct TerminalSegment *segment);

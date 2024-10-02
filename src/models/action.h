@@ -6,6 +6,7 @@
 #include <stdlib.h>
 
 #define MAX_INPUT 255
+#define MAX_OUTPUT 2048
 
 enum ActionKind {
     ACTION_NONE,
@@ -39,6 +40,7 @@ struct Action {
     enum ActionKind kind;
     enum ActionTargetKind target_kind;
     int target_id;
+    char result[MAX_OUTPUT];
 };
 
 struct Action *Action_create(const char *input);

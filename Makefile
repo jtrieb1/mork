@@ -57,7 +57,7 @@ check:
 	@egrep '[^_]gets\(|[^_]strcpy\(|[^_]strcat\(|[^_]sprintf\(|[^_]gets\(|[^_]scanf\(' $(SOURCES) || true
 
 # Install
-install: all
+install:
 # Copy header files into /usr/local/include
 # Headers should keep their directory structure
 	mkdir -p $(PREFIX)/include/mork

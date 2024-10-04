@@ -54,9 +54,15 @@ char *test_TS_append_to_empty()
 
     TS_concatText(src, "Hello, world!");
     TS_append(dest, src);
-    mu_assert(dest->cursorCol == 14, "Failed to set destination cursor column after append.");
+    log_info("Destination raw text representation: %s", dest->rawTextRepresentation->data);
+    log_info("Destination cursor column: %d", dest->cursorCol);
+    log_info("Destination cursor row: %d", dest->cursorRow);
+    mu_assert(dest->cursorCol == 13, "Failed to set destination cursor column after append.");
     mu_assert(dest->cursorRow == 1, "Failed to set destination cursor row after append.");
-    mu_assert(strcmp(dest->rawTextRepresentation, "\033[0m\033[37mHello, world!") == 0, "Failed to set destination raw text representation after append.");
+    bstring expected = bfromcstr("\033[0mHello, world!");
+    mu_assert(bstrcmp(dest->rawTextRepresentation, expected) == 0, "Failed to set destination raw text representation after append.");
+
+    bdestroy(expected);
 
     TS_destroy(dest);
     return NULL;
@@ -79,10 +85,15 @@ char *test_TS_append_to_full()
     TS_concatText(src, "Hello again!");
     TS_concatText(dest, "Hello, world!");
     TS_append(dest, src);
-    mu_assert(dest->cursorCol == 13, "Failed to set destination cursor column after append.");
+    log_info("Destination raw text representation: %s", dest->rawTextRepresentation->data);
+    log_info("Destination cursor column: %d", dest->cursorCol);
+    log_info("Destination cursor row: %d", dest->cursorRow);
+    mu_assert(dest->cursorCol == 12, "Failed to set destination cursor column after append.");
     mu_assert(dest->cursorRow == 2, "Failed to set destination cursor row after append.");
-    mu_assert(strcmp(dest->rawTextRepresentation, "\033[0m\033[37mHello, world!\n\033[0m\033[37mHello again!") == 0, "Failed to set destination raw text representation after append.");
+    bstring expected = bfromcstr("\033[0mHello, world!\n\033[0mHello again!");
+    mu_assert(bstrcmp(dest->rawTextRepresentation, expected) == 0, "Failed to set destination raw text representation after append.");
 
+    bdestroy(expected);
     TS_destroy(dest);
     return NULL;
 }
@@ -141,7 +152,7 @@ char *test_screen_set_header()
     char *display = ScreenState_getDisplay(state);
     mu_assert(display != NULL, "Failed to get display.");
     log_info("Display: %s", display);
-    mu_assert(strcmp(display, "\033[0m\033[37mHeader\033[2;1H") == 0, "Failed to set header.");
+    mu_assert(strcmp(display, "\033[0mHeader\033[0m\033[2;1H") == 0, "Failed to set header.");
 
     free(display);
     ScreenState_destroy(state);
@@ -158,13 +169,15 @@ char *test_screen_set_multiline_header()
     mu_assert(state->statusBar != NULL, "Failed to create status bar terminal segment.");
 
     ScreenState_headerSet(state, "Header\nHeader");
-    mu_assert(state->header->cursorRow == 3, "Failed to set header cursor row.");
-    mu_assert(state->text->cursorRow == 4, "Failed to set text cursor row.");
+    log_info("Header cursor row: %d", state->header->cursorRow);
+    log_info("Text cursor row: %d", state->text->cursorRow);
+    mu_assert(state->header->cursorRow == 2, "Failed to set header cursor row.");
+    mu_assert(state->text->cursorRow == 3, "Failed to set text cursor row.");
 
     char *display = ScreenState_getDisplay(state);
     mu_assert(display != NULL, "Failed to get display.");
     log_info("Display: %s", display);
-    mu_assert(strcmp(display, "\033[0m\033[37mHeader\nHeader\n\033[4;1H") == 0, "Failed to set header.");
+    mu_assert(strcmp(display, "\033[0mHeader\nHeader\033[0m\033[3;1H") == 0, "Failed to set header.");
     
     free(display);
     ScreenState_destroy(state);
@@ -183,7 +196,7 @@ char *test_screen_set_text()
     char *display = ScreenState_getDisplay(state);
     mu_assert(display != NULL, "Failed to get display.");
     log_info("Display: %s", display);
-    mu_assert(strcmp(display, "\033[0m\033[37m\033[24;1HText\n\033[0m\033[37m\033[3;1H") == 0, "Failed to set text.");
+    mu_assert(strcmp(display, "\033[0m\033[24;1HText\n\033[0m\033[3;1H") == 0, "Failed to set text.");
 
     free(display);
     ScreenState_destroy(state);

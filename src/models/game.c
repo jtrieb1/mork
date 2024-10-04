@@ -19,8 +19,6 @@ struct BaseGame *BaseGame_create(struct Character *player)
     TS_concatText(TS_setGreen(TS_setBold(header)), "Mork");
     ScreenState_headerAppendInline(game->screen, header);
 
-    struct TerminalSegment *statusBar = TS_new();
-    check(statusBar != NULL, "Failed to create status bar.");
     ScreenState_statusBarSet(game->screen, "Health: ");
     ScreenState_statusBarAppendInline(game->screen, TS_setGreen(TS_concatText(TS_new(), "110/110")));
 
@@ -109,7 +107,7 @@ enum MorkResult BaseGame_setHeader(struct BaseGame *game, struct TerminalSegment
     if (game == NULL) {
         return MORK_ERROR_MODEL_GAME_NULL;
     }
-    ScreenState_headerSet(game->screen, header->rawTextRepresentation);
+    ScreenState_headerReplace(game->screen, header);
     return MORK_OK;
 }
 
@@ -245,7 +243,7 @@ struct TerminalSegment *BaseGame_move(struct Database *db, struct BaseGame *game
     }
 
     struct Location *location = game->current_location;
-    struct TerminalSegment *ts = TS_setNormal(TS_setWhite(TS_new()));
+    struct TerminalSegment *ts = TS_new();
     // Exit mapping is [NORTH, SOUTH, EAST, WEST, UP, DOWN]
 
     int exit_position = -1;
@@ -302,7 +300,7 @@ struct TerminalSegment *BaseGame_take(struct Database *db, struct BaseGame *game
 
     struct Location *location = game->current_location;
     struct Character *player = game->player;
-    struct TerminalSegment *ts = TS_setNormal(TS_setWhite(TS_new()));
+    struct TerminalSegment *ts = TS_new();
 
     switch (targetkind) {
         case TARGET_NONE:
@@ -340,7 +338,7 @@ struct TerminalSegment *BaseGame_drop(struct Database *db, struct BaseGame *game
     }
 
     struct Character *player = game->player;
-    struct TerminalSegment *ts = TS_setNormal(TS_setWhite(TS_new()));
+    struct TerminalSegment *ts = TS_new();
 
     switch (targetkind) {
         case TARGET_NONE:
@@ -389,12 +387,12 @@ struct TerminalSegment *BaseGame_look(struct Database *db, struct BaseGame *game
             if (location->exitIDs[0] != 0) {
                 struct Location *new_location = Location_load(db, location->exitIDs[0]);
                 if (new_location != NULL) {
-                    TS_concatText(TS_setNormal(TS_setWhite(ts)), new_location->description);
+                    TS_concatText(ts, new_location->description);
                 } else {
-                    TS_concatText(TS_setNormal(TS_setWhite(ts)), "There's nothing over there.");
+                    TS_concatText(ts, "There's nothing over there.");
                 }
             } else {
-                TS_concatText(TS_setNormal(TS_setWhite(ts)), "There's nothing over there.");
+                TS_concatText(ts, "There's nothing over there.");
             }
             return ts;
         case TARGET_SOUTH:
@@ -402,12 +400,12 @@ struct TerminalSegment *BaseGame_look(struct Database *db, struct BaseGame *game
             if (location->exitIDs[1] != 0) {
                 struct Location *new_location = Location_load(db, location->exitIDs[1]);
                 if (new_location != NULL) {
-                    TS_concatText(TS_setNormal(TS_setWhite(ts)), new_location->description);
+                    TS_concatText(ts, new_location->description);
                 } else {
-                    TS_concatText(TS_setNormal(TS_setWhite(ts)), "There's nothing over there.");
+                    TS_concatText(ts, "There's nothing over there.");
                 }
             } else {
-                TS_concatText(TS_setNormal(TS_setWhite(ts)), "There's nothing over there.");
+                TS_concatText(ts, "There's nothing over there.");
             }
             return ts;
         case TARGET_EAST:
@@ -415,12 +413,12 @@ struct TerminalSegment *BaseGame_look(struct Database *db, struct BaseGame *game
             if (location->exitIDs[2] != 0) {
                 struct Location *new_location = Location_load(db, location->exitIDs[2]);
                 if (new_location != NULL) {
-                    TS_concatText(TS_setNormal(TS_setWhite(ts)), new_location->description);
+                    TS_concatText(ts, new_location->description);
                 } else {
-                    TS_concatText(TS_setNormal(TS_setWhite(ts)), "There's nothing over there.");
+                    TS_concatText(ts, "There's nothing over there.");
                 }
             } else {
-                TS_concatText(TS_setNormal(TS_setWhite(ts)), "There's nothing over there.");
+                TS_concatText(ts, "There's nothing over there.");
             }
             return ts;
         case TARGET_WEST:
@@ -428,12 +426,12 @@ struct TerminalSegment *BaseGame_look(struct Database *db, struct BaseGame *game
             if (location->exitIDs[3] != 0) {
                 struct Location *new_location = Location_load(db, location->exitIDs[3]);
                 if (new_location != NULL) {
-                    TS_concatText(TS_setNormal(TS_setWhite(ts)), new_location->description);
+                    TS_concatText(ts, new_location->description);
                 } else {
-                    TS_concatText(TS_setNormal(TS_setWhite(ts)), "There's nothing over there.");
+                    TS_concatText(ts, "There's nothing over there.");
                 }
             } else {
-                TS_concatText(TS_setNormal(TS_setWhite(ts)), "There's nothing over there.");
+                TS_concatText(ts, "There's nothing over there.");
             }
             return ts;
         case TARGET_UP:
@@ -441,12 +439,12 @@ struct TerminalSegment *BaseGame_look(struct Database *db, struct BaseGame *game
             if (location->exitIDs[4] != 0) {
                 struct Location *new_location = Location_load(db, location->exitIDs[4]);
                 if (new_location != NULL) {
-                    TS_concatText(TS_setNormal(TS_setWhite(ts)), new_location->description);
+                    TS_concatText(ts, new_location->description);
                 } else {
-                    TS_concatText(TS_setNormal(TS_setWhite(ts)), "There's nothing up there.");
+                    TS_concatText(ts, "There's nothing up there.");
                 }
             } else {
-                TS_concatText(TS_setNormal(TS_setWhite(ts)), "There's nothing up there.");
+                TS_concatText(ts, "There's nothing up there.");
             }
             return ts;
         case TARGET_DOWN:
@@ -454,36 +452,36 @@ struct TerminalSegment *BaseGame_look(struct Database *db, struct BaseGame *game
             if (location->exitIDs[5] != 0) {
                 struct Location *new_location = Location_load(db, location->exitIDs[5]);
                 if (new_location != NULL) {
-                    TS_concatText(TS_setNormal(TS_setWhite(ts)), new_location->description);
+                    TS_concatText(ts, new_location->description);
                 } else {
-                    TS_concatText(TS_setNormal(TS_setWhite(ts)), "There's nothing down there.");
+                    TS_concatText(ts, "There's nothing down there.");
                 }
             } else {
-                TS_concatText(TS_setNormal(TS_setWhite(ts)), "There's nothing down there.");
+                TS_concatText(ts, "There's nothing down there.");
             }
             return ts;
         case TARGET_ITEM:
             for (int i = 0; i < MAX_ITEMS; i++) {
                 if (strcmp(location->items[i]->name, target) == 0) {
-                    return TS_concatText(TS_setNormal(TS_setWhite(ts)), location->items[i]->description);
+                    return TS_concatText(ts, location->items[i]->description);
                 }
             }
-            return TS_concatText(TS_setNormal(TS_setWhite(ts)), "What are you looking at?");
+            return TS_concatText(ts, "What are you looking at?");
         case TARGET_SELF:
             // Look at the player
-            TS_concatText(TS_setNormal(TS_setWhite(ts)), "You are ");
+            TS_concatText(ts, "You are ");
             TS_concatText(TS_setBold(TS_setYellow(ts)), game->player->name);
-            TS_concatText(TS_setNormal(TS_setWhite(ts)), ".");
+            TS_concatText(TS_setNormal(ts), ".");
             return ts;
         case TARGET_CHARACTER:
             break;
         case TARGET_ROOM:
             // Look at the current room
-            TS_concatText(TS_setNormal(TS_setWhite(ts)), location->description);
+            TS_concatText(ts, location->description);
             return ts;
     }
 
-    return TS_concatText(TS_setNormal(TS_setWhite(ts)), "You look around, but see nothing of interest.");
+    return TS_concatText(ts, "You look around, but see nothing of interest.");
 }
 
 struct TerminalSegment *BaseGame_inventory(struct BaseGame *game)
@@ -495,14 +493,14 @@ struct TerminalSegment *BaseGame_inventory(struct BaseGame *game)
     struct TerminalSegment *ts = TS_new();
     check(ts != NULL, "Failed to create terminal segment.");
 
-    TS_concatText(TS_setNormal(TS_setWhite(ts)), "Inventory:\n");
+    TS_concatText(ts, "Inventory:\n");
 
     struct Character *player = game->player;
 
     for (int i = 0; i < MAX_ITEMS; i++) {
         if (player->inventory->items[i] != NULL) {
             TS_concatText(TS_setYellow(TS_setBold(ts)), player->inventory->items[i]->name);
-            TS_concatText(TS_setNormal(TS_setWhite(ts)), "\n");
+            TS_concatText(TS_setNormal(ts), "\n");
         }
     }
     return ts;
@@ -520,14 +518,14 @@ struct TerminalSegment *BaseGame_help(struct BaseGame *game)
     struct TerminalSegment *frame = TS_new();
     check(frame != NULL, "Failed to create frame.");
 
-    TS_concatText(TS_setNormal(TS_setWhite(frame)), "Commands:\n");
-    TS_concatText(TS_setBold(TS_setWhite(frame)), "look [north, south, east, west, up, down, room, item, self, character]\n");
-    TS_concatText(TS_setBold(TS_setWhite(frame)), "move [north, south, east, west, up, down]\n");
-    TS_concatText(TS_setBold(TS_setWhite(frame)), "take [item]\n");
-    TS_concatText(TS_setBold(TS_setWhite(frame)), "drop [item]\n");
-    TS_concatText(TS_setBold(TS_setWhite(frame)), "inventory\n");
-    TS_concatText(TS_setBold(TS_setWhite(frame)), "help\n");
-    TS_concatText(TS_setBold(TS_setWhite(frame)), "quit\n");
+    TS_concatText(TS_setNormal(frame), "Commands:\n");
+    TS_concatText(TS_setBold(frame), "look [north, south, east, west, up, down, room, item, self, character]\n");
+    TS_concatText(frame, "move [north, south, east, west, up, down]\n");
+    TS_concatText(frame, "take [item]\n");
+    TS_concatText(frame, "drop [item]\n");
+    TS_concatText(frame, "inventory\n");
+    TS_concatText(frame, "help\n");
+    TS_concatText(frame, "quit\n");
 
     return frame;
 
@@ -556,7 +554,7 @@ struct TerminalSegment *BaseGame_execute(struct Database *db, struct BaseGame *g
     check(frame != NULL, "Failed to create frame.");
 
     // Add context to the body frame
-    TS_concatText(TS_setNormal(TS_setWhite(frame)), "You are in ");
+    TS_concatText(frame, "You are in ");
     TS_concatText(TS_setBold(frame), game->current_location->name);
 
     // Execute the action
@@ -600,7 +598,7 @@ enum MorkResult BaseGame_run(struct Database *db, struct BaseGame *game)
 
     // Setup
     struct TerminalSegment *context = TS_new();
-    TS_concatText(TS_setNormal(TS_setWhite(context)), "You are in ");
+    TS_concatText(context, "You are in ");
     TS_concatText(TS_setBold(context), game->current_location->name);
     ScreenState_textReplace(game->screen, context);
 
@@ -643,6 +641,7 @@ enum MorkResult BaseGame_run(struct Database *db, struct BaseGame *game)
         enum MorkResult res = Action_parse(action, db);
         if (res != MORK_OK) {
             Action_destroy(action);
+            action = NULL;
             continue;
         }
 
@@ -659,6 +658,7 @@ enum MorkResult BaseGame_run(struct Database *db, struct BaseGame *game)
 
         // Cleanup
         Action_destroy(action);
+        action = NULL;
     }
 
     return MORK_OK;

@@ -3,6 +3,7 @@
 
 #include "../src/coredb/db.h"
 #include "../src/models/action.h"
+#include "../src/models/actionparser.h"
 #include "../src/models/character.h"
 #include "../src/models/game.h"
 #include "../src/models/inventory.h"
@@ -10,6 +11,9 @@
 #include "../src/models/location.h"
 
 #include <stdio.h>
+
+static struct tagbstring north_target = bsStatic("north");
+static struct tagbstring down_target = bsStatic("down");
 
 struct Database *db = NULL;
 
@@ -168,13 +172,11 @@ char *test_add_item_to_inventory()
 {
     struct Character *mork = Character_load(db, "Mork");
     mu_assert(mork != NULL, "Failed to load Mork");
-    Database_print(db, ITEMS);
     struct Item *item = Item_loadByName(db, "Mork's Suspenders"); // Load Mork's suspenders
     mu_assert(item != NULL, "Failed to load item.");
 
     mu_assert(Inventory_addItem(mork->inventory, item) == MORK_OK, "Failed to add item to inventory.");
     mu_assert(Inventory_getItemCount(mork->inventory) == 1, "Failed to load item count.");
-    log_info("Item count: %d", Inventory_getItemCount(mork->inventory));
 
     // Write everything to the DB by writing the character
     Character_save(db, mork);
@@ -186,7 +188,6 @@ char *test_add_item_to_inventory()
     // Make sure the item is still in the inventory
     // and that the inventory is still there
     mu_assert(mork->inventory != NULL, "Failed to load inventory.");
-    log_info("Item count on load: %d", Inventory_getItemCount(mork->inventory));
     mu_assert(Inventory_getItemCount(mork->inventory) == 1, "Failed to load item count.");
 
     Character_destroy(mork);
@@ -199,7 +200,6 @@ char *test_remove_item_from_inventory()
     struct Character *mork = Character_load(db, "Mork");
     mu_assert(mork != NULL, "Failed to load Mork");
     struct Item *item = Item_loadByName(db, "Mork's Suspenders");
-    log_info("Item ID: %d", item->id);
     mu_assert(item != NULL, "Failed to load item.");
 
     mu_assert(Inventory_removeItem(mork->inventory, item) == MORK_OK, "Failed to find item to remove.");
@@ -213,7 +213,6 @@ char *test_remove_item_from_inventory()
     mork = Character_load(db, "Mork");
 
     mu_assert(mork->inventory != NULL, "Failed to load inventory.");
-    log_err("Item count: %d", Inventory_getItemCount(mork->inventory));
     mu_assert(Inventory_getItemCount(mork->inventory) == 0, "Failed to save updated item count");
 
     Character_destroy(mork);
@@ -346,7 +345,6 @@ char *test_update_item_in_location()
 
     struct Item *updated_item = Item_loadByName(db, "Mork's Suspenders");
     mu_assert(updated_item != NULL, "Failed to load updated item.");
-    log_info("Updated item description: %s", updated_item->description);
     mu_assert(strcmp(updated_item->description, "Updated description for Mork's Suspenders.") == 0, "Failed to update item description.");
 
     Location_destroy(location);
@@ -426,14 +424,12 @@ char *test_create_action()
     struct Action *action = Action_create(input);
 
     mu_assert(action != NULL, "Failed to create action.");
-    mu_assert(strcmp(action->raw_input, input) == 0, "Failed to set raw input.");
+    mu_assert(strcmp(action->raw_input->data, input) == 0, "Failed to set raw input.");
 
     enum MorkResult parseResult = Action_parse(action, NULL); // Don't need DB since we never touch it here
     mu_assert(parseResult == MORK_OK, "Failed to parse action.");
-
-    mu_assert(strcmp(action->verb, "look") == 0, "Failed to parse verb.");
     mu_assert(action->kind == ACTION_LOOK, "Failed to parse action kind.");
-    mu_assert(strcmp(action->noun, "north") == 0, "Failed to parse noun.");
+    mu_assert(bstrcmp(action->noun, &north_target) == 0, "Failed to parse noun.");
     mu_assert(action->target_kind == TARGET_NORTH, "Failed to parse target kind.");
 
     Action_destroy(action);
@@ -442,14 +438,13 @@ char *test_create_action()
     action = Action_create(input);
 
     mu_assert(action != NULL, "Failed to create action.");
-    mu_assert(strcmp(action->raw_input, input) == 0, "Failed to set raw input.");
+    mu_assert(strcmp(action->raw_input->data, input) == 0, "Failed to set raw input.");
 
     parseResult = Action_parse(action, NULL);
     mu_assert(parseResult == MORK_OK, "Failed to parse action.");
 
-    mu_assert(strcmp(action->verb, "move") == 0, "Failed to parse verb.");
     mu_assert(action->kind == ACTION_MOVE, "Failed to parse action kind.");
-    mu_assert(strcmp(action->noun, "down") == 0, "Failed to parse noun.");
+    mu_assert(bstrcmp(action->noun, &down_target) == 0, "Failed to parse noun.");
     mu_assert(action->target_kind == TARGET_DOWN, "Failed to parse target kind.");
 
     Action_destroy(action);
@@ -463,31 +458,29 @@ char *test_parse_actions()
     struct Action *action = Action_create(input);
 
     mu_assert(action != NULL, "Failed to create action.");
-    mu_assert(strcmp(action->raw_input, input) == 0, "Failed to set raw input.");
+    mu_assert(strcmp(action->raw_input->data, input) == 0, "Failed to set raw input.");
 
     enum MorkResult parseResult = Action_parse(action, NULL);
     mu_assert(parseResult == MORK_OK, "Failed to parse action.");
 
-    mu_assert(strcmp(action->verb, "look") == 0, "Failed to parse verb.");
     mu_assert(action->kind == ACTION_LOOK, "Failed to parse action kind.");
-    mu_assert(strcmp(action->noun, "north") == 0, "Failed to parse noun.");
+    mu_assert(bstrcmp(action->noun, &north_target) == 0, "Failed to parse noun.");
     mu_assert(action->target_kind == TARGET_NORTH, "Failed to parse target kind.");
 
     Action_destroy(action);
 
-    input = "move south";
+    input = "move down";
     action = Action_create(input);
 
     mu_assert(action != NULL, "Failed to create action.");
-    mu_assert(strcmp(action->raw_input, input) == 0, "Failed to set raw input.");
+    mu_assert(strcmp(action->raw_input->data, input) == 0, "Failed to set raw input.");
 
     parseResult = Action_parse(action, NULL);
     mu_assert(parseResult == MORK_OK, "Failed to parse action.");
 
-    mu_assert(strcmp(action->verb, "move") == 0, "Failed to parse verb.");
     mu_assert(action->kind == ACTION_MOVE, "Failed to parse action kind.");
-    mu_assert(strcmp(action->noun, "south") == 0, "Failed to parse noun.");
-    mu_assert(action->target_kind == TARGET_SOUTH, "Failed to parse target kind.");
+    mu_assert(bstrcmp(action->noun, &down_target) == 0, "Failed to parse noun.");
+    mu_assert(action->target_kind == TARGET_DOWN, "Failed to parse target kind.");
 
     Action_destroy(action);
 
@@ -495,14 +488,12 @@ char *test_parse_actions()
     action = Action_create(input);
 
     mu_assert(action != NULL, "Failed to create action.");
-    mu_assert(strcmp(action->raw_input, input) == 0, "Failed to set raw input.");
+    mu_assert(strcmp(action->raw_input->data, input) == 0, "Failed to set raw input.");
 
     parseResult = Action_parse(action, NULL);
     mu_assert(parseResult == MORK_OK, "Failed to parse action.");
 
-    mu_assert(strcmp(action->verb, "inventory") == 0, "Failed to parse verb.");
     mu_assert(action->kind == ACTION_INVENTORY, "Failed to parse action kind.");
-    mu_assert(strcmp(action->noun, "") == 0, "Failed to parse noun.");
     mu_assert(action->target_kind == TARGET_NONE, "Failed to parse target kind.");
 
     Action_destroy(action);
@@ -511,14 +502,12 @@ char *test_parse_actions()
     action = Action_create(input);
 
     mu_assert(action != NULL, "Failed to create action.");
-    mu_assert(strcmp(action->raw_input, input) == 0, "Failed to set raw input.");
+    mu_assert(strcmp(action->raw_input->data, input) == 0, "Failed to set raw input.");
 
     parseResult = Action_parse(action, NULL);
     mu_assert(parseResult == MORK_OK, "Failed to parse action.");
 
-    mu_assert(strcmp(action->verb, "help") == 0, "Failed to parse verb.");
     mu_assert(action->kind == ACTION_HELP, "Failed to parse action kind.");
-    mu_assert(strcmp(action->noun, "") == 0, "Failed to parse noun.");
     mu_assert(action->target_kind == TARGET_NONE, "Failed to parse target kind.");
 
     Action_destroy(action);
@@ -550,9 +539,8 @@ char *test_execute_action()
 
     struct Action *lastAction = game->history[0];
     mu_assert(lastAction != NULL, "Failed to save action to history.");
-    mu_assert(strcmp(lastAction->verb, "look") == 0, "Failed to save verb to history.");
     mu_assert(lastAction->kind == ACTION_LOOK, "Failed to save action kind to history.");
-    mu_assert(strcmp(lastAction->noun, "north") == 0, "Failed to save noun to history.");
+    mu_assert(bstrcmp(lastAction->noun, &north_target) == 0, "Failed to save noun to history.");
     mu_assert(lastAction->target_kind == TARGET_NORTH, "Failed to save target kind to history.");
 
     input = "move down";
@@ -564,17 +552,14 @@ char *test_execute_action()
 
     lastAction = game->history[0];
     mu_assert(lastAction != NULL, "Failed to save action to history.");
-    mu_assert(strcmp(lastAction->verb, "move") == 0, "Failed to save verb to history.");
     mu_assert(lastAction->kind == ACTION_MOVE, "Failed to save action kind to history.");
-    mu_assert(strcmp(lastAction->noun, "down") == 0, "Failed to save noun to history.");
+    mu_assert(bstrcmp(lastAction->noun, &down_target) == 0, "Failed to save noun to history.");
     mu_assert(lastAction->target_kind == TARGET_DOWN, "Failed to save target kind to history.");
 
     struct Action *theOneBeforeThat = game->history[1];
     mu_assert(theOneBeforeThat != NULL, "Failed to save action to history.");
-    log_info("The one before that: %s", theOneBeforeThat->raw_input);
-    mu_assert(strcmp(theOneBeforeThat->verb, "look") == 0, "Failed to save verb to history.");
     mu_assert(theOneBeforeThat->kind == ACTION_LOOK, "Failed to save action kind to history.");
-    mu_assert(strcmp(theOneBeforeThat->noun, "north") == 0, "Failed to save noun to history.");
+    mu_assert(bstrcmp(theOneBeforeThat->noun, &north_target) == 0, "Failed to save noun to history.");
     mu_assert(theOneBeforeThat->target_kind == TARGET_NORTH, "Failed to save target kind to history.");
 
     BaseGame_destroy(game);

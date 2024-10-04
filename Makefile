@@ -1,5 +1,5 @@
 PREFIX?=/usr/local
-CFLAGS=-Wall -g -O2 -Wextra -Isrc -rdynamic -DNDEBUG $(OPTFLAGS)
+CFLAGS=-Wall -g -O2 -Wextra -Isrc -rdynamic -DNDEBUG -llcthw $(OPTFLAGS)
 LIBS=-ldl $(OPTLIBS)
 
 SOURCES=$(wildcard src/**/**/*.c src/**/*.c src/*.c)
@@ -18,8 +18,9 @@ all: $(TARGET) $(SO_TARGET) tools tests
 
 tools: dbcli
 
-demo: $(TARGET) $(SO_TARGET)
-	$(CC) -o bin/demo example/main.c $(CFLAGS) $(LIBS) $(TARGET) example/gamedata.c
+demo: LDLIBS += $(TARGET)
+demo:
+	$(CC) -o bin/demo example/main.c example/gamedata.c $(CFLAGS) $(LIBS) $(TARGET) -llcthw
 
 dbcli: $(TARGET) $(SO_TARGET)
 	$(CC) -o bin/dbcli tools/dbcli.c $(CFLAGS) $(LIBS) $(TARGET)
@@ -40,7 +41,7 @@ build:
 
 # The Unit Tests
 .PHONY: tests
-tests: CFLAGS += $(OBJECTS)
+tests: CFLAGS += $(OBJECTS) -llcthw
 tests: $(TESTS)
 	sh ./tests/runtests.sh
 
@@ -58,17 +59,9 @@ check:
 
 # Install
 install:
-# Copy header files into /usr/local/include
-# Headers should keep their directory structure
-	mkdir -p $(PREFIX)/include/mork
-	cp -R src/* $(PREFIX)/include/mork
-# Make sure we only keep headers in the include folder
-	@rm -f $(PREFIX)/include/mork/**/**/*.c
-	@rm -f $(PREFIX)/include/mork/**/*.c
-	@rm -f $(PREFIX)/include/mork/*.c
-	@rm -f $(PREFIX)/include/mork/**/**/*.o
-	@rm -f $(PREFIX)/include/mork/**/*.o
-	@rm -f $(PREFIX)/include/mork/*.o
+# Copy headers into /usr/local/include
+	install -d $(PREFIX)/include/mork
+	$(foreach header, $(HEADERS), install -m 644 $(header) $(PREFIX)/include/mork/$(notdir $(header));)
 # Copy bundled static library into /usr/local/lib
 	install $(TARGET) $(PREFIX)/lib
 

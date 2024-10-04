@@ -275,6 +275,8 @@ enum MorkResult Database_destroy(struct Database *db)
         if (res != MORK_OK) { return res; }
     }
 
+    db->initialized = 0;
+
     free(db);
     return MORK_OK;
 }

@@ -73,6 +73,7 @@ struct Database *create_db(char *full_path)
 {
     struct Database *game_db = Database_create();
     Database_createFile(game_db, full_path);
+    Database_open(game_db, full_path);
 
     return game_db;
 }
@@ -86,7 +87,6 @@ void setup()
     setup_game_directory(full_path);
 
     struct Database *game_db = create_db(full_path);
-    Database_open(game_db, full_path);
     
     populate_game(game_db);
 
@@ -102,7 +102,7 @@ error:
 struct Character *create_player_menu(struct Database *game_db)
 {
     char *name = calloc(1, MAX_NAME);
-    unsigned char stats[6] = {0};
+    unsigned char stats[6] = {5,5,5,5,5,10};
 
     ScreenState_clear();
 
@@ -110,34 +110,28 @@ struct Character *create_player_menu(struct Database *game_db)
 
     struct TerminalSegment *menuheader = TS_new();
     check(menuheader != NULL, "Could not create menu");
-    TS_clearScreen(menuheader);
     TS_setBold(TS_setGreen(menuheader));
     TS_concatText(menuheader, TITLE);
     TS_setCentered(menuheader);
     
-    ScreenState_headerAppend(screen, menuheader);
-    ScreenState_textSet(screen, INTRO);
+    ScreenState_headerAppendInline(screen, menuheader);
+
+    struct TerminalSegment *text = TS_new();
+    check(text != NULL, "Could not create text");
+    TS_concatText(text, INTRO);
+    ScreenState_textReplace(screen, text);
     ScreenState_print(screen);
 
     printf("Welcome to Mork! Please enter your name: ");
-    fgets(name, MAX_NAME, stdin);
+    char *fgetsres = fgets(name, MAX_NAME, stdin);
+    check(fgetsres != NULL, "Could not read name");
     name[strlen(name) - 1] = '\0';
 
-    printf("Please enter your stats:\n");
-    printf("Strength: ");
-    scanf("%hhu", &stats[STRENGTH]);
-    printf("Dexterity: ");
-    scanf("%hhu", &stats[DEXTERITY]);
-    printf("Intelligence: ");
-    scanf("%hhu", &stats[INTELLIGENCE]);
-    printf("Charisma: ");
-    scanf("%hhu", &stats[CHARISMA]);
-    printf("Wisdom: ");
-    scanf("%hhu", &stats[WISDOM]);
-    printf("Funkiness: ");
-    scanf("%hhu", &stats[FUNKINESS]);
-
-    struct Character *player = Character_create(name, 1, stats, 6);
+    struct Character *player = Character_create(
+        name, 1, 
+        stats, 
+        6
+    );
     Character_save(game_db, player);
 
     return player;

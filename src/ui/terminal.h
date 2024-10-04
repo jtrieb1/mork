@@ -1,5 +1,7 @@
 #pragma once
 
+#include <lcthw/bstrlib.h>
+
 #include "../models/character.h"
 #include "../models/location.h"
 
@@ -12,7 +14,7 @@ void clear_screen();
 struct TerminalSegment {
     int cursorCol;
     int cursorRow;
-    char *rawTextRepresentation;
+    bstring rawTextRepresentation;
 };
 
 void TS_calculate_cursor_position_from_raw(struct TerminalSegment *frame);
@@ -63,6 +65,7 @@ char *ScreenState_getDisplay(struct ScreenState *state);
 void ScreenState_clear();
 
 void ScreenState_headerSet(struct ScreenState *state, const char *text);
+void ScreenState_headerReplace(struct ScreenState *state, struct TerminalSegment *segment);
 void ScreenState_headerAppend(struct ScreenState *state, struct TerminalSegment *segment);
 void ScreenState_headerAppendInline(struct ScreenState *state, struct TerminalSegment *segment);
 void ScreenState_textSet(struct ScreenState *state, const char *text);
